@@ -1,24 +1,40 @@
+# app.py
 import os
 import json
-from datetime import datetime, timezone
 import requests
-from flask import Flask, jsonify, render_template_string
+from datetime import datetime, timezone
+from flask import Flask, jsonify, render_template_string, request
+from flask_cors import CORS
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from bson.json_util import dumps
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Configuration
-API_KEY = os.getenv("GNEWS_API_KEY", "2cc0f5ffb33045d88bb9858440e5e5d6")  # Keep in .env in production
+# === Configuration ===
+MONGO_URI = os.getenv("MONGODB_URI")
+DB_NAME = os.getenv("DB_NAME", "market_reports_db")
+PORT = int(os.getenv("PORT", 5050))
+
+# GNews API
+API_KEY = os.getenv("GNEWS_API_KEY", "2cc0f5ffb33045d88bb9858440e5e5d6")
 CACHE_PATH = "cache/news.json"
-QUERY = 'gold price OR "gold market" OR "bullion price" OR "gold rate" OR "gold market update" OR "gold investment" OR "gold demand"'  # Focus on price/market
-MAX_ARTICLES = 10  # fetch more, then filter
+QUERY = 'gold price OR "gold market" OR "bullion price" OR "gold rate" OR "gold market update" OR "gold investment" OR "gold demand"'
+MAX_ARTICLES = 10
 LANG = "en"
 
-app = Flask(__name__)
+# === MongoDB Setup ===
+if not MONGO_URI:
+    raise Exception("MONGO_URI not set in environment (.env)")
 
-# ===== IMPACT SCORING FUNCTION =====
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+reports_col = db.reports
+
+# === Impact Scoring & Filtering ===
 IMPACT_KEYWORDS = {
     "high": [
         "fed", "federal reserve", "interest rate", "dollar", "usd", "bond yield",
@@ -37,35 +53,14 @@ def calculate_impact_score(text: str) -> int:
         return 0
     text = text.lower()
     score = 0
-
     for word in IMPACT_KEYWORDS["high"]:
         if word in text:
             score += 3
     for word in IMPACT_KEYWORDS["medium"]:
         if word in text:
             score += 1
-
     return score
 
-# ===== CACHE HELPERS =====
-def ensure_cache_dir():
-    d = os.path.dirname(CACHE_PATH)
-    if d and not os.path.exists(d):
-        os.makedirs(d, exist_ok=True)
-
-def read_cache():
-    try:
-        with open(CACHE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"last_updated": None, "articles": []}
-
-def write_cache(obj):
-    ensure_cache_dir()
-    with open(CACHE_PATH, "w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=2)
-
-# ===== RELEVANCE FILTERING FUNCTION =====
 def is_gold_price_relevant(article: dict) -> bool:
     """Filter out irrelevant articles (jewelry, politics, music, etc.)."""
     title = article.get("title", "").lower()
@@ -92,16 +87,33 @@ def is_gold_price_relevant(article: dict) -> bool:
     for kw in relevant_keywords:
         if kw in title or kw in desc:
             return True
-
     return False
 
-# ===== FETCH & CACHE NEWS =====
+# === Cache Helpers ===
+def ensure_cache_dir():
+    d = os.path.dirname(CACHE_PATH)
+    if d and not os.path.exists(d):
+        os.makedirs(d, exist_ok=True)
+
+def read_cache():
+    try:
+        with open(CACHE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"last_updated": None, "articles": []}
+
+def write_cache(obj):
+    ensure_cache_dir()
+    with open(CACHE_PATH, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+
+# === Fetch & Cache News ===
 def fetch_and_cache_news():
     url = "https://gnews.io/api/v4/search"
     params = {
         "q": QUERY,
         "lang": LANG,
-        "max": MAX_ARTICLES * 2,  # fetch more to filter
+        "max": MAX_ARTICLES * 2,
         "apikey": API_KEY
     }
 
@@ -110,7 +122,7 @@ def fetch_and_cache_news():
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        app.logger.error("GNews API failed: %s", e)
+        print(f"GNews API failed: {e}")
         return
 
     articles = []
@@ -119,7 +131,6 @@ def fetch_and_cache_news():
         desc = a.get("description") or ""
         score = calculate_impact_score(title + " " + desc)
 
-        # ✅ Only keep articles relevant to gold price/market
         if not is_gold_price_relevant(a):
             continue
 
@@ -132,9 +143,8 @@ def fetch_and_cache_news():
             "impact_score": score
         })
 
-    # Sort by impact score (highest first)
-    articles = sorted(articles, key=lambda x: x["impact_score"], reverse=True)
-    articles = articles[:5]  # keep top 5 most impactful
+    # Sort by impact score (highest first), limit to top 5
+    articles = sorted(articles, key=lambda x: x["impact_score"], reverse=True)[:5]
 
     cache_obj = {
         "last_updated": datetime.now(timezone.utc).isoformat(),
@@ -142,24 +152,123 @@ def fetch_and_cache_news():
     }
 
     write_cache(cache_obj)
-    app.logger.info(f"Cached {len(articles)} relevant gold price articles")
+    print(f"Cached {len(articles)} relevant gold price articles")
 
-# ===== DAILY SCHEDULER =====
+# === Scheduler Setup ===
 scheduler = BackgroundScheduler(timezone=timezone.utc)
-scheduler.add_job(fetch_and_cache_news, 'cron', hour=2, minute=30)  # Runs daily at 2:30 AM UTC
+scheduler.add_job(fetch_and_cache_news, 'cron', hour=2, minute=30)  # Daily at 2:30 UTC
 scheduler.start()
 
-# Initial load
-with app.app_context():
-    if not read_cache().get("last_updated"):
-        fetch_and_cache_news()
+# === Initialize Flask App ===
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# ===== ROUTES =====
+# === Helpers ===
+def serialize_report(doc):
+    doc["_id"] = str(doc["_id"])
+    return doc
+
+# === Routes: Reports CRUD ===
+@app.route("/api/reports", methods=["GET"])
+def get_reports():
+    title_q = request.args.get("title", None)
+    if title_q:
+        cursor = reports_col.find({"title": {"$regex": f"^{title_q}$", "$options": "i"}})
+    else:
+        cursor = reports_col.find()
+    docs = [serialize_report(d) for d in cursor]
+    return jsonify(docs), 200
+
+@app.route("/api/reports/<id>", methods=["GET"])
+def get_report_by_id(id):
+    try:
+        doc = reports_col.find_one({"_id": ObjectId(id)})
+    except Exception as e:
+        return jsonify({"error": "invalid id"}), 400
+    if not doc:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(serialize_report(doc)), 200
+
+@app.route("/api/reports", methods=["POST"])
+def create_report():
+    data = request.json
+    if not data or "title" not in data:
+        return jsonify({"error": "missing title"}), 400
+    data.setdefault("things", [])
+    data.setdefault("links", [])
+    data.setdefault("opinion", "")
+    data.setdefault("result", "")
+    res = reports_col.insert_one(data)
+    doc = reports_col.find_one({"_id": res.inserted_id})
+    return jsonify(serialize_report(doc)), 201
+
+@app.route("/api/reports/<id>", methods=["PUT"])
+def update_report(id):
+    data = request.json
+    try:
+        oid = ObjectId(id)
+    except Exception as e:
+        return jsonify({"error": "invalid id"}), 400
+    update = {"$set": {
+        "title": data.get("title"),
+        "things": data.get("things", []),
+        "links": data.get("links", []),
+        "opinion": data.get("opinion", ""),
+        "result": data.get("result", "")
+    }}
+    result = reports_col.update_one({"_id": oid}, update)
+    if result.matched_count == 0:
+        return jsonify({"error": "not found"}), 404
+    doc = reports_col.find_one({"_id": oid})
+    return jsonify(serialize_report(doc)), 200
+
+@app.route("/api/reports/<id>", methods=["DELETE"])
+def delete_report(id):
+    try:
+        oid = ObjectId(id)
+    except Exception as e:
+        return jsonify({"error": "invalid id"}), 400
+    result = reports_col.delete_one({"_id": oid})
+    if result.deleted_count == 0:
+        return jsonify({"error": "not found"}), 404
+    return jsonify({"deleted": id}), 200
+
+# === Seed Route (Optional) ===
+@app.route("/api/seed", methods=["POST"])
+def seed():
+    sample = [
+        {
+            "title": "Short term",
+            "things": ["Stock prices rising", "High daily volume in commodities"],
+            "links": ["https://example.com/news1", "https://example.com/news2"],
+            "opinion": "Short-term momentum looks bullish as buyers dominate.",
+            "result": "Cautious optimistic for next 2–4 weeks."
+        },
+        {
+            "title": "Long term",
+            "things": ["Inflation easing", "Central banks hold rates"],
+            "links": ["https://example.com/long1"],
+            "opinion": "Long-term fundamentals remain steady.",
+            "result": "Neutral-positive for 6–12 months."
+        },
+        {
+            "title": "Market sentiment",
+            "things": ["Retail investors shifting to ETFs", "Options skew showing fear"],
+            "links": ["https://example.com/sentiment"],
+            "opinion": "Sentiment mixed; monitor positioning closely.",
+            "result": "Short-term caution, long-term accumulation possible."
+        }
+    ]
+    reports_col.delete_many({})
+    reports_col.insert_many(sample)
+    return jsonify({"seeded": True}), 201
+
+# === News API Route ===
 @app.route("/news")
 def news_api():
     return jsonify(read_cache())
 
-# ===== FRONTEND (No Refresh Button) =====
+# === Frontend (No Refresh Button) ===
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -224,8 +333,9 @@ INDEX_HTML = """
 def index():
     return render_template_string(INDEX_HTML)
 
+# === Start the App ===
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-
+    print("Starting Flask app...")
+    print(f"Port: {PORT}")
+    print("Scheduler: Daily news update at 2:30 UTC")
+    app.run(host="0.0.0.0", port=PORT, debug=False)
