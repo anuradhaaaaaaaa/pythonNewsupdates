@@ -174,7 +174,7 @@ def serialize_report(doc):
 # === Routes: Reports CRUD ===
 @app.route("/api/reports", methods=["GET"])
 def get_reports():
-    if not reports_col: return jsonify({"error": "DB not connected"}), 500
+    if reports_col is None: return jsonify({"error": "DB not connected"}), 500
     title_q = request.args.get("title", None)
     if title_q:
         cursor = reports_col.find({"title": {"$regex": f"^{title_q}$", "$options": "i"}})
@@ -185,7 +185,7 @@ def get_reports():
 
 @app.route("/api/reports/<id>", methods=["GET"])
 def get_report_by_id(id):
-    if not reports_col: return jsonify({"error": "DB not connected"}), 500
+    if reports_col is None: return jsonify({"error": "DB not connected"}), 500
     try:
         doc = reports_col.find_one({"_id": ObjectId(id)})
     except Exception:
@@ -196,7 +196,7 @@ def get_report_by_id(id):
 
 @app.route("/api/reports", methods=["POST"])
 def create_report():
-    if not reports_col: return jsonify({"error": "DB not connected"}), 500
+    if reports_col is None: return jsonify({"error": "DB not connected"}), 500
     data = request.json
     if not data or "title" not in data:
         return jsonify({"error": "missing title"}), 400
@@ -210,7 +210,7 @@ def create_report():
 
 @app.route("/api/reports/<id>", methods=["PUT"])
 def update_report(id):
-    if not reports_col: return jsonify({"error": "DB not connected"}), 500
+    if reports_col is None: return jsonify({"error": "DB not connected"}), 500
     data = request.json
     try:
         oid = ObjectId(id)
@@ -231,7 +231,7 @@ def update_report(id):
 
 @app.route("/api/reports/<id>", methods=["DELETE"])
 def delete_report(id):
-    if not reports_col: return jsonify({"error": "DB not connected"}), 500
+    if reports_col is None: return jsonify({"error": "DB not connected"}), 500
     try:
         oid = ObjectId(id)
     except Exception:
