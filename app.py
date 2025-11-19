@@ -1,4 +1,3 @@
-# app.py
 import os
 import json
 import requests
@@ -7,7 +6,6 @@ from flask import Flask, jsonify, render_template_string, request
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from bson.json_util import dumps
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
@@ -27,12 +25,15 @@ MAX_ARTICLES = 10
 LANG = "en"
 
 # === MongoDB Setup ===
+# Handle case where MONGO_URI is missing (for local testing without DB)
 if not MONGO_URI:
-    raise Exception("MONGO_URI not set in environment (.env)")
-
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-reports_col = db.reports
+    print("WARNING: MONGO_URI not set. Database features will fail.")
+    client = None
+    reports_col = None
+else:
+    client = MongoClient(MONGO_URI)
+    db = client[DB_NAME]
+    reports_col = db.reports
 
 # === Impact Scoring & Filtering ===
 IMPACT_KEYWORDS = {
@@ -67,11 +68,11 @@ def is_gold_price_relevant(article: dict) -> bool:
     desc = article.get("description", "").lower()
 
     # ❌ Remove irrelevant topics
+    # FIXED: Removed economic terms (dollar, inflation, interest) from here
+    # because they are actually HIGH IMPACT drivers for gold.
     irrelevant_keywords = [
-        "jewelry", "ring", "necklace", "wedding", "fashion", "music",
-        "war", "conflict", "politics", "election", "government", "economy",
-        "currency", "dollar", "interest rate", "bond", "inflation",
-        "central bank", "federal reserve", "yield", "interest", "bond"
+        "necklace", "wedding", "fashion", "music", "concert",
+        "entertainment", "gossip", "celebrity", "sport"
     ]
 
     for kw in irrelevant_keywords:
@@ -81,7 +82,7 @@ def is_gold_price_relevant(article: dict) -> bool:
     # ✅ Keep only articles mentioning price, market, demand, investment
     relevant_keywords = [
         "price", "rate", "market", "update", "trend", "demand", "supply",
-        "value", "investment", "bullion", "gold market"
+        "value", "investment", "bullion", "gold market", "dollar", "inflation", "fed"
     ]
 
     for kw in relevant_keywords:
@@ -109,6 +110,7 @@ def write_cache(obj):
 
 # === Fetch & Cache News ===
 def fetch_and_cache_news():
+    print("Fetching fresh news from GNews API...")
     url = "https://gnews.io/api/v4/search"
     params = {
         "q": QUERY,
@@ -123,7 +125,7 @@ def fetch_and_cache_news():
         data = resp.json()
     except Exception as e:
         print(f"GNews API failed: {e}")
-        return
+        return {"error": str(e)}
 
     articles = []
     for a in data.get("articles", []):
@@ -152,7 +154,8 @@ def fetch_and_cache_news():
     }
 
     write_cache(cache_obj)
-    print(f"Cached {len(articles)} relevant gold price articles")
+    print(f"Success: Cached {len(articles)} relevant gold price articles")
+    return cache_obj
 
 # === Scheduler Setup ===
 scheduler = BackgroundScheduler(timezone=timezone.utc)
@@ -171,6 +174,7 @@ def serialize_report(doc):
 # === Routes: Reports CRUD ===
 @app.route("/api/reports", methods=["GET"])
 def get_reports():
+    if not reports_col: return jsonify({"error": "DB not connected"}), 500
     title_q = request.args.get("title", None)
     if title_q:
         cursor = reports_col.find({"title": {"$regex": f"^{title_q}$", "$options": "i"}})
@@ -181,9 +185,10 @@ def get_reports():
 
 @app.route("/api/reports/<id>", methods=["GET"])
 def get_report_by_id(id):
+    if not reports_col: return jsonify({"error": "DB not connected"}), 500
     try:
         doc = reports_col.find_one({"_id": ObjectId(id)})
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "invalid id"}), 400
     if not doc:
         return jsonify({"error": "not found"}), 404
@@ -191,6 +196,7 @@ def get_report_by_id(id):
 
 @app.route("/api/reports", methods=["POST"])
 def create_report():
+    if not reports_col: return jsonify({"error": "DB not connected"}), 500
     data = request.json
     if not data or "title" not in data:
         return jsonify({"error": "missing title"}), 400
@@ -204,10 +210,11 @@ def create_report():
 
 @app.route("/api/reports/<id>", methods=["PUT"])
 def update_report(id):
+    if not reports_col: return jsonify({"error": "DB not connected"}), 500
     data = request.json
     try:
         oid = ObjectId(id)
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "invalid id"}), 400
     update = {"$set": {
         "title": data.get("title"),
@@ -224,51 +231,31 @@ def update_report(id):
 
 @app.route("/api/reports/<id>", methods=["DELETE"])
 def delete_report(id):
+    if not reports_col: return jsonify({"error": "DB not connected"}), 500
     try:
         oid = ObjectId(id)
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "invalid id"}), 400
     result = reports_col.delete_one({"_id": oid})
     if result.deleted_count == 0:
         return jsonify({"error": "not found"}), 404
     return jsonify({"deleted": id}), 200
 
-# === Seed Route (Optional) ===
-@app.route("/api/seed", methods=["POST"])
-def seed():
-    sample = [
-        {
-            "title": "Short term",
-            "things": ["Stock prices rising", "High daily volume in commodities"],
-            "links": ["https://example.com/news1", "https://example.com/news2"],
-            "opinion": "Short-term momentum looks bullish as buyers dominate.",
-            "result": "Cautious optimistic for next 2–4 weeks."
-        },
-        {
-            "title": "Long term",
-            "things": ["Inflation easing", "Central banks hold rates"],
-            "links": ["https://example.com/long1"],
-            "opinion": "Long-term fundamentals remain steady.",
-            "result": "Neutral-positive for 6–12 months."
-        },
-        {
-            "title": "Market sentiment",
-            "things": ["Retail investors shifting to ETFs", "Options skew showing fear"],
-            "links": ["https://example.com/sentiment"],
-            "opinion": "Sentiment mixed; monitor positioning closely.",
-            "result": "Short-term caution, long-term accumulation possible."
-        }
-    ]
-    reports_col.delete_many({})
-    reports_col.insert_many(sample)
-    return jsonify({"seeded": True}), 201
+# === NEW ROUTE: Manual Force Refresh ===
+@app.route("/api/news/refresh", methods=["POST"])
+def force_refresh_news():
+    """Manually triggers the news fetcher."""
+    result = fetch_and_cache_news()
+    if result and "error" in result:
+        return jsonify(result), 500
+    return jsonify({"status": "success", "message": "Cache updated successfully"}), 200
 
 # === News API Route ===
 @app.route("/news")
 def news_api():
     return jsonify(read_cache())
 
-# === Frontend (No Refresh Button) ===
+# === Frontend ===
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -278,7 +265,8 @@ INDEX_HTML = """
   <title>Gold News – Daily Top 5</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f8f9fa; margin:0; }
-    header { background:#2c3e50; color:white; padding:1.3rem; text-align:center; }
+    header { background:#2c3e50; color:white; padding:1.3rem; text-align:center; display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; }
+    header h2 { margin: 0; }
     .container { max-width:800px; margin:1.5rem auto; padding:0 1rem; }
     .card { background:white; border-radius:10px; padding:1.3rem; margin-bottom:1rem; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
     .title { font-size:1.2rem; font-weight:600; color:#2c3e50; text-decoration:none; }
@@ -286,10 +274,28 @@ INDEX_HTML = """
     .meta { font-size:0.9rem; color:#777; margin:0.3rem 0; }
     .desc { color:#555; line-height:1.5; margin-top:0.5rem; }
     .badge { padding:4px 8px; border-radius:4px; font-size:0.75rem; color:white; background:#27ae60; float:right; }
+    
+    /* Button Styles */
+    .refresh-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.3s;
+    }
+    .refresh-btn:hover { background-color: #c0392b; }
+    .refresh-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <header><h2>Gold News – Daily Top 5 (Ranked by Impact)</h2></header>
+  <header>
+    <h2>Gold News – Daily Top 5</h2>
+    <button id="refreshBtn" class="refresh-btn" onclick="forceRefresh()">Force Refresh</button>
+  </header>
+  
   <div class="container">
     <div id="status" style="margin:0.5rem 0;color:#555;">Loading...</div>
     <div id="list"></div>
@@ -297,11 +303,19 @@ INDEX_HTML = """
 
   <script>
     async function loadNews(){
-      document.getElementById("status").textContent = "Loading news…";
+      document.getElementById("status").textContent = "Loading news from cache...";
       try {
         const r = await fetch("/news");
         const j = await r.json();
-        document.getElementById("status").textContent = "Last updated: " + (j.last_updated || "unknown");
+        
+        if (!j.last_updated) {
+            document.getElementById("status").textContent = "No data available. Click Force Refresh.";
+            return;
+        }
+
+        const date = new Date(j.last_updated).toLocaleString();
+        document.getElementById("status").textContent = "Last updated: " + date;
+        
         const list = document.getElementById("list");
         list.innerHTML = "";
         (j.articles || []).forEach(a => {
@@ -321,9 +335,35 @@ INDEX_HTML = """
       }
     }
 
+    // === NEW: Force Refresh Logic ===
+    async function forceRefresh() {
+        const btn = document.getElementById("refreshBtn");
+        const originalText = btn.textContent;
+        
+        if(!confirm("This will call the external GNews API. Continue?")) return;
+
+        btn.disabled = true;
+        btn.textContent = "Updating...";
+        
+        try {
+            const res = await fetch("/api/news/refresh", { method: "POST" });
+            const data = await res.json();
+            
+            if(res.ok) {
+                alert("Cache updated!");
+                loadNews(); // Reload the UI
+            } else {
+                alert("Error: " + (data.error || "Unknown error"));
+            }
+        } catch (e) {
+            alert("Network error: " + e);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
     loadNews();
-    // Refresh every 5 minutes (cache is updated daily, so no need for force refresh)
-    setInterval(loadNews, 5 * 60 * 1000);
   </script>
 </body>
 </html>
@@ -337,5 +377,10 @@ def index():
 if __name__ == "__main__":
     print("Starting Flask app...")
     print(f"Port: {PORT}")
-    print("Scheduler: Daily news update at 2:30 UTC")
+    
+    # Check if cache exists, if not, fetch once on startup
+    if not os.path.exists(CACHE_PATH):
+        print("No cache found. Fetching initial news...")
+        fetch_and_cache_news()
+        
     app.run(host="0.0.0.0", port=PORT, debug=False)
