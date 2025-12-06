@@ -6,7 +6,7 @@ from aiohttp import web
 # --- CONFIGURATION ---
 PORT = int(os.environ.get("PORT", 5050))
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("P2P_Transfer_100GB")
+logger = logging.getLogger("P2P_ShinChan_Transfer")
 
 # --- FRONTEND ---
 HTML_CONTENT = r"""
@@ -15,597 +15,457 @@ HTML_CONTENT = r"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>100GB Secure P2P Transfer</title>
+    <title>Shin-Chan's Super Transfer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/polyfill.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.5/StreamSaver.min.js"></script>
+
     <style>
         :root {
-            --bg-body: #020617;      /* slate-950 */
-            --bg-card: #020617;
-            --bg-card-inner: #020617;
-            --border-subtle: #1f2937; /* slate-800 */
-            --accent: #6366f1;       /* indigo-500 */
-            --accent-soft: rgba(99,102,241,0.12);
-            --accent-strong: #4f46e5; /* indigo-600 */
-            --text-main: #f9fafb;    /* very light */
-            --text-muted: #e5e7eb;   /* light */
-            --text-soft: #9ca3af;    /* medium */
-            --danger: #f97373;
-            --log-bg: #020617;
-            --log-text: #4ade80;
-        }
-
-        * {
-            box-sizing: border-box;
+            --shin-red: #ff4757;
+            --shin-yellow: #f1c40f;
+            --shin-skin: #ffeaa7;
+            --action-blue: #3742fa;
+            --chocobi-green: #2ed573;
+            --chocobi-pink: #ff7f50;
+            --outline: #2f3542;
+            --white: #ffffff;
         }
 
         body {
             margin: 0;
             padding: 0;
-            min-height: 100vh;
-            background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
-            color: var(--text-main);
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-
-        .app-shell {
-            max-width: 920px;
-            margin: 32px auto;
-            padding: 0 12px 32px;
-        }
-
-        .card-main {
-            background: linear-gradient(145deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95));
-            border-radius: 18px;
-            border: 1px solid rgba(148,163,184,0.20);
-            box-shadow:
-                0 22px 45px rgba(15,23,42,0.85),
-                0 0 0 1px rgba(15,23,42,0.7);
-            padding: 24px 20px 20px;
-        }
-
-        @media (min-width: 768px) {
-            .card-main {
-                padding: 28px 28px 22px;
-            }
-        }
-
-        .app-header {
+            height: 100vh;
+            width: 100vw;
+            background-color: #70a1ff;
+            /* Polka dot background like Shin Chan transitions */
+            background-image: radial-gradient(var(--white) 15%, transparent 16%),
+                              radial-gradient(var(--white) 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            font-family: 'Fredoka', cursive;
+            overflow: hidden; /* PC only, no scroll on main body */
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 18px;
+            justify-content: center;
         }
 
-        .app-title {
+        /* --- CARTOON CONTAINERS --- */
+        .app-shell {
+            width: 90%;
+            height: 90%;
+            max-width: 1400px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .main-stage {
+            flex: 1;
+            background: var(--white);
+            border: 4px solid var(--outline);
+            border-radius: 30px;
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Decorative Header (Action Kamen Style) */
+        .shin-header {
+            background: var(--shin-red);
+            padding: 20px;
+            border-bottom: 4px solid var(--outline);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .app-title h1 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            letter-spacing: 0.03em;
+            color: var(--shin-yellow);
+            font-weight: 700;
+            font-size: 2.5rem;
+            text-shadow: 3px 3px 0px var(--outline);
             margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #ffffff;
-        }
-
-        .app-title h1 span.badge-pill {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            padding: 3px 9px;
-            border-radius: 999px;
-            background: rgba(15,23,42,0.95);
-            border: 1px solid rgba(148,163,184,0.7);
-            color: #e5e7eb;
+            -webkit-text-stroke: 1.5px var(--outline);
         }
 
         .app-title p {
+            color: var(--white);
+            font-weight: 600;
             margin: 0;
-            font-size: 0.8rem;
-            color: var(--text-muted);
+            font-size: 1.1rem;
         }
 
+        /* Status badges */
         .status-chips {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            font-size: 0.75rem;
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 9px;
-            border-radius: 999px;
-            background: rgba(15,23,42,0.92);
-            border: 1px solid rgba(148,163,184,0.65);
-            color: var(--text-muted);
-            white-space: nowrap;
-        }
-
-        .chip-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: #22c55e;
-            box-shadow: 0 0 8px rgba(34,197,94,0.8);
-        }
-
-        .chip-label {
-            font-weight: 600;
-            color: #e5e7eb;
-        }
-
-        .chip-sub {
-            font-size: 0.7em;
-            opacity: 0.9;
-        }
-
-        .chip-fs {
-            border-style: dashed;
-        }
-
-        /* Step 1 */
-        #step1 {
-            margin-top: 8px;
-        }
-
-        .role-buttons {
-            display: grid;
             gap: 10px;
         }
+        .chip {
+            background: var(--white);
+            border: 3px solid var(--outline);
+            border-radius: 15px;
+            padding: 5px 15px;
+            font-weight: 700;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+        }
 
-        @media (min-width: 576px) {
-            .role-buttons {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+        /* --- CONTENT AREA --- */
+        .stage-content {
+            padding: 40px;
+            flex: 1;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #fff 0%, #f1f2f6 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* --- BUTTONS (BOUNCY) --- */
+        .btn {
+            border: 3px solid var(--outline) !important;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            padding: 15px 30px;
+            border-radius: 50px;
+            box-shadow: 0 6px 0 var(--outline);
+            transition: all 0.1s;
+            position: relative;
+            top: 0;
+        }
+
+        .btn:active {
+            top: 6px;
+            box-shadow: 0 0 0 var(--outline);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-            border: none;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            padding-block: 10px;
-            box-shadow: 0 14px 28px rgba(79,70,229,0.5);
-            color: #f9fafb;
+            background-color: var(--shin-red);
+            color: var(--shin-yellow);
         }
-
         .btn-primary:hover {
-            background: linear-gradient(135deg, var(--accent-strong), #4338ca);
-            box-shadow: 0 16px 32px rgba(79,70,229,0.7);
+            background-color: #ff6b81;
+            color: var(--white);
+            transform: scale(1.05);
         }
 
         .btn-outline-light {
-            border-radius: 999px;
-            border: 1px solid rgba(209,213,219,0.75) !important;
-            color: #f9fafb;
-            background: rgba(15,23,42,0.85);
-            font-weight: 500;
-            font-size: 0.95rem;
+            background-color: var(--action-blue);
+            color: var(--white);
         }
-
         .btn-outline-light:hover {
-            background: rgba(30,64,175,0.6);
-            border-color: rgba(209,213,219,1) !important;
+            background-color: #5352ed;
+            color: var(--white);
+            transform: scale(1.05);
         }
 
-        .hint-row {
-            margin-top: 10px;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 4px;
+        .btn-success {
+            background-color: var(--chocobi-green);
+            color: var(--white);
         }
 
-        .pill-tag {
-            font-size: 0.7rem;
-            padding: 3px 9px;
-            border-radius: 999px;
-            border: 1px solid rgba(209,213,219,0.8);
-            background: rgba(15,23,42,0.9);
-            color: #e5e7eb;
-        }
-
-        /* Step 2 – Room / Join */
-        #step2 .alert {
-            background: rgba(15,23,42,0.96);
-            border-radius: 14px;
-            border: 1px solid rgba(148,163,184,0.45);
-            color: var(--text-main);
-        }
-
-        #roomIdDisplay {
-            font-size: 0.98rem;
+        /* --- INPUTS --- */
+        input[type="text"] {
+            border: 3px solid var(--outline);
+            border-radius: 20px;
+            padding: 15px;
+            font-size: 1.5rem;
+            text-align: center;
             font-weight: 700;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: #e5e7eb;
+            color: var(--action-blue);
+            background: #f1f2f6;
+            box-shadow: inset 4px 4px 0px rgba(0,0,0,0.1);
         }
 
-        #joinInput {
-            background: rgba(15,23,42,0.96);
-            border-radius: 999px;
-            border: 1px solid rgba(148,163,184,0.7);
-            color: var(--text-main);
-            font-size: 0.9rem;
-        }
-
-        #joinInput::placeholder {
-            color: var(--text-soft);
-        }
-
-        #senderWaiting p {
-            margin-top: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Step 3 */
-        #step3 {
-            margin-top: 6px;
-        }
-
-        .transfer-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-            gap: 20px;
-            margin-bottom: 18px;
-        }
-
-        @media (max-width: 768px) {
-            .transfer-layout {
-                grid-template-columns: minmax(0, 1fr);
-            }
-        }
-
+        /* --- PANELS (Chocobi Box Style) --- */
         .panel {
-            border-radius: 14px;
-            border: 1px solid rgba(148,163,184,0.45);
-            background: radial-gradient(circle at top left, rgba(79,70,229,0.18), rgba(15,23,42,0.98));
-            padding: 14px 14px 12px;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
+            background: var(--white);
+            border: 3px solid var(--outline);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 8px 8px 0px var(--chocobi-green); /* Green Shadow */
+            margin-bottom: 20px;
+            position: relative;
         }
 
         .panel-title {
-            font-size: 0.92rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #c7d2fe;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--outline);
+            margin-bottom: 5px;
         }
-
-        .panel-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
+        
         .panel-badge {
-            font-size: 0.78rem;
-            padding: 3px 8px;
-            border-radius: 999px;
-            border: 1px solid rgba(129,140,248,0.9);
-            background: rgba(15,23,42,0.98);
-            color: #e0e7ff;
-            font-weight: 500;
+            background: var(--shin-yellow);
+            border: 2px solid var(--outline);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 10px;
         }
 
-        /* Sender file selector */
+        /* --- DROP ZONE --- */
         #dropZone {
-            border: 2px dashed rgba(209,213,219,0.85);
-            border-radius: 14px;
-            padding: 26px 18px;
+            border: 4px dashed var(--action-blue);
+            border-radius: 20px;
+            background: #f1f2f6;
+            padding: 40px;
             text-align: center;
             cursor: pointer;
-            transition: 0.18s ease;
-            background: rgba(15,23,42,0.98);
+            transition: 0.3s;
         }
 
         #dropZone:hover {
-            background: rgba(30,64,175,0.55);
-            border-color: #a5b4fc;
-            box-shadow: 0 0 0 1px rgba(129,140,248,0.9);
+            background: #dfe4ea;
+            transform: rotate(-1deg) scale(1.02);
         }
 
         #dropZone h3 {
-            margin: 0 0 6px;
-            font-size: 1.02rem;
-            font-weight: 600;
-            color: #f9fafb;
+            font-weight: 800;
+            color: var(--action-blue);
         }
 
-        #dropZone p {
-            margin: 0;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
-
-        #fileActions {
-            border-radius: 12px;
-            background: rgba(15,23,42,0.98);
-            border: 1px solid rgba(209,213,219,0.6);
-            padding: 10px 12px;
-        }
-
-        #fileName {
-            font-size: 0.9rem;
-            margin: 0 0 2px;
-            color: #f9fafb;
-        }
-
-        #fileSize {
-            font-size: 0.8rem;
-            color: var(--text-muted) !important;
-            margin: 0 0 6px;
-        }
-
-        #receiverStatus {
-            font-size: 0.84rem;
-            color: var(--text-muted);
-        }
-
-        #resumeControl {
-            margin-top: 10px;
-            background: rgba(30,64,175,0.2);
-            border-color: rgba(129,140,248,0.9);
-            color: var(--text-main);
-            font-size: 0.8rem;
-        }
-
-        #saveAndStartBtn {
-            font-size: 0.84rem;
-            font-weight: 600;
-            border-radius: 999px;
-            padding-block: 8px;
-        }
-
-        /* Progress & stats */
+        /* --- PROGRESS BAR --- */
         .progress-wrapper {
-            border-radius: 14px;
-            background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,1));
-            border: 1px solid rgba(148,163,184,0.55);
-            padding: 10px 14px 12px;
+            margin-top: 20px;
+            border: 3px solid var(--outline);
+            border-radius: 20px;
+            padding: 15px;
+            background: var(--shin-skin);
+            box-shadow: 6px 6px 0px var(--shin-red);
         }
 
         .progress {
-            background-color: rgba(15,23,42,0.98);
-            border-radius: 999px;
+            height: 30px;
+            border: 2px solid var(--outline);
+            border-radius: 15px;
+            background: var(--white);
             overflow: hidden;
-            height: 20px;
         }
 
-        #progressBar {
-            font-size: 0.77rem;
-            font-weight: 700;
+        .progress-bar {
+            background-color: var(--chocobi-green);
+            background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);
+            background-size: 1rem 1rem;
         }
 
-        .stats-row {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 6px;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
-
-        .stats-row span strong {
-            color: #f9fafb;
-        }
-
-        /* Logs */
+        /* --- LOGS (Comic Speech Bubble) --- */
         .log-container {
-            margin-top: 12px;
-            border-radius: 14px;
-            background: var(--log-bg);
-            border: 1px solid rgba(31,41,55,1);
+            margin-top: 20px;
+            background: var(--white);
+            border: 3px solid var(--outline);
+            border-radius: 20px;
+            padding: 0;
+            position: relative;
         }
-
+        
         .log-header {
-            padding: 6px 10px 4px;
-            border-bottom: 1px solid rgba(55,65,81,1);
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-        }
-
-        .log-header span.label {
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
+            background: var(--outline);
+            color: var(--white);
+            padding: 10px 20px;
             font-weight: 700;
-            font-size: 0.78rem;
-            color: #e5e7eb;
-        }
-
-        .log-header span.right {
-            font-size: 0.75rem;
-            opacity: 0.9;
+            border-radius: 16px 16px 0 0;
         }
 
         #logs {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 0.78rem;
-            color: var(--log-text);
-            background: transparent;
-            padding: 8px 9px;
-            height: 140px;
+            height: 120px;
             overflow-y: auto;
-            border-radius: 0 0 14px 14px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 600;
+            color: var(--outline);
         }
 
-        #logs div {
-            white-space: pre-wrap;
+        .text-red { color: var(--shin-red); font-weight: bold; }
+
+        /* --- DECORATIONS --- */
+        .star-decoration {
+            font-size: 50px;
+            position: absolute;
+            z-index: 0;
+            animation: spin 10s linear infinite;
+            opacity: 0.2;
+            pointer-events: none;
         }
 
-        .text-red {
-            color: var(--danger);
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Step Visibility Utilities */
+        #step1, #step2, #step3 { width: 100%; max-width: 900px; margin: 0 auto; }
+        
+        .role-buttons {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 40px;
         }
+
+        .role-card {
+            flex: 1;
+            padding: 30px;
+            border: 3px solid var(--outline);
+            border-radius: 25px;
+            text-align: center;
+            background: var(--white);
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+        .role-card:hover {
+            transform: translateY(-10px);
+        }
+
+        /* Step 2 Room ID Styling */
+        #roomIdDisplay {
+            font-size: 3rem;
+            color: var(--shin-red);
+            font-weight: 900;
+            letter-spacing: 5px;
+            text-shadow: 2px 2px 0px var(--outline);
+        }
+
     </style>
 </head>
 <body>
 
+<div style="position:absolute; top: 10px; left: 10px; font-size: 4rem;">⭐</div>
+<div style="position:absolute; bottom: 10px; right: 10px; font-size: 4rem;">🦕</div>
+<div style="position:absolute; top: 40%; left: 5%; font-size: 3rem; opacity: 0.5;">🍪</div>
+<div style="position:absolute; top: 20%; right: 10%; font-size: 3rem; opacity: 0.5;">👽</div>
+
 <div class="app-shell">
-    <div class="card-main">
-        <header class="app-header">
+    <div class="main-stage">
+        <header class="shin-header">
             <div class="app-title">
                 <h1>
-                    ⚡ 100GB P2P Transfer
-                    <span class="badge-pill">WebRTC · End-to-End</span>
+                    ⚡ SHIN-CHAN TRANSFER
                 </h1>
-                <p>Send huge files directly between two browsers. No server storage. Just signaling.</p>
+                <p>Oho! Send Big Files P2P! No Servers!</p>
             </div>
             <div class="status-chips">
-                <div class="chip">
-                    <span class="chip-dot"></span>
-                    <span class="chip-label">Ready</span>
-                    <span class="chip-sub">Awaiting role</span>
-                </div>
-                <div class="chip chip-fs">
-                    <span id="fsStatus">Detecting file system...</span>
+                <div class="chip" style="color: var(--chocobi-green);">
+                    <span id="fsStatus">Checking File System...</span>
                 </div>
             </div>
         </header>
 
-        <!-- Step 1 -->
-        <div id="step1">
-            <div class="role-buttons mb-2">
-                <button class="btn btn-primary" onclick="startSender()">I am the SENDER (Upload)</button>
-                <button class="btn btn-outline-light" onclick="startReceiver()">I am the RECEIVER (Download)</button>
-            </div>
-            <div class="hint-row">
-                <span id="wakeLockStatus">😴 Screen can sleep</span>
-                <span class="pill-tag">Keep both tabs open during transfer</span>
-            </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div id="step2" style="display:none;" class="mt-3">
-            <div class="alert text-center">
-                <h4 id="roomIdDisplay" class="mb-2"></h4>
-                <p class="mb-3 text-muted" style="font-size:0.8rem;">
-                    Share this Room ID with your peer. Only two peers are allowed per room.
-                </p>
-                <div id="receiverInput" style="display:none;">
-                    <input type="text" id="joinInput" class="form-control text-center mb-2" placeholder="Enter Room ID from sender">
-                    <button class="btn btn-success w-100" onclick="joinRoom()">Connect to Sender</button>
-                </div>
-                <div id="senderWaiting" style="display:none;">
-                    <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
-                    <p class="mb-0" style="font-size:0.85rem;">Waiting for receiver to join…</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 3 -->
-        <div id="step3" style="display:none;" class="mt-3">
-            <div class="transfer-layout">
-                <!-- Sender Panel -->
-                <div id="senderUI" style="display:none;">
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <div class="panel-title">Sender</div>
-                                <div class="panel-sub">Choose the file you want to share</div>
-                            </div>
-                            <div class="panel-badge">Upload</div>
-                        </div>
-
-                        <div id="dropZone">
-                            <h3>Select file</h3>
-                            <p>Click to browse or drop a file here (multi-GB supported)</p>
-                            <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(this.files)">
-                        </div>
-
-                        <div id="fileActions" class="mt-3" style="display:none;">
-                            <h5 id="fileName"></h5>
-                            <p class="text-muted" id="fileSize"></p>
-                            <button class="btn btn-success w-100" onclick="initiateTransfer()">Start / Resume Transfer</button>
-                        </div>
+        <div class="stage-content">
+            
+            <div id="step1">
+                <h2 class="text-center" style="font-weight: 800; color: var(--outline); margin-bottom: 20px;">Hey! Who are you today?</h2>
+                <div class="role-buttons">
+                    <div class="role-card" style="background: #ffcccc;">
+                        <div style="font-size: 4rem;">📤</div>
+                        <h3>I am Sender</h3>
+                        <p>I have the files!</p>
+                        <button class="btn btn-primary w-100 mt-2" onclick="startSender()">Start Upload</button>
+                    </div>
+                    <div class="role-card" style="background: #c7ecee;">
+                        <div style="font-size: 4rem;">📥</div>
+                        <h3>I am Receiver</h3>
+                        <p>Give me files!</p>
+                        <button class="btn btn-outline-light w-100 mt-2" onclick="startReceiver()">Start Download</button>
                     </div>
                 </div>
+                <div class="text-center mt-4">
+                     <span id="wakeLockStatus" class="chip" style="background:var(--shin-skin);">😴 Screen might sleep</span>
+                </div>
+            </div>
 
-                <!-- Receiver Panel -->
-                <div id="receiverUI" style="display:none;">
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <div class="panel-title">Receiver</div>
-                                <div class="panel-sub">Wait for metadata, then choose save location</div>
-                            </div>
-                            <div class="panel-badge">Download</div>
-                        </div>
+            <div id="step2" style="display:none;" class="text-center">
+                <div class="panel" style="max-width: 600px; margin: 0 auto;">
+                    <h3>Room Secret Code</h3>
+                    <p>Tell this to your friend, quick!</p>
+                    <div id="roomIdDisplay" class="mb-4"></div>
+                    
+                    <div id="receiverInput" style="display:none;">
+                        <input type="text" id="joinInput" class="form-control mb-3" placeholder="ENTER CODE HERE">
+                        <button class="btn btn-success w-100" onclick="joinRoom()">JOIN ROOM & CONNECT!</button>
+                    </div>
 
-                        <p id="receiverStatus">Waiting for sender metadata…</p>
-
-                        <div id="resumeControl" style="display:none;" class="alert alert-warning">
-                            <strong>Resumable transfer detected.</strong><br>
-                            Sender has <span id="remoteFileName"></span>.<br>
-                            Current progress: <span id="currentReceived">0</span> bytes.
-                            <div class="mt-2 d-flex gap-2">
-                                <button class="btn btn-sm btn-warning flex-grow-1" onclick="requestResume()">Resume Download</button>
-                                <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="requestNew()">Restart</button>
-                            </div>
-                        </div>
-
-                        <button id="saveAndStartBtn"
-                                class="btn btn-success mt-3 w-100"
-                                style="display:none;"
-                                onclick="prepareSaveAndStart()">
-                            Choose save location & start download
-                        </button>
+                    <div id="senderWaiting" style="display:none;">
+                        <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
+                        <h4 class="mt-3">Waiting for friend to join...</h4>
+                        <p class="text-muted">Don't close this window!</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Progress & logs -->
-            <div class="progress-wrapper">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-soft);">
-                        Transfer progress
-                    </span>
-                    <span style="font-size:0.8rem; color:var(--text-muted);">
-                        P2P via WebRTC DataChannel
-                    </span>
-                </div>
-                <div class="progress">
-                    <div id="progressBar"
-                         class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                         role="progressbar"
-                         style="width: 0%">
-                        0%
+            <div id="step3" style="display:none;">
+                <div class="row">
+                    <div class="col-md-6" id="senderUI" style="display:none;">
+                        <div class="panel">
+                            <div class="d-flex justify-content-between">
+                                <span class="panel-title">SENDER ZONE</span>
+                                <span class="panel-badge">UPLOAD</span>
+                            </div>
+                            
+                            <div id="dropZone" class="mt-3">
+                                <div style="font-size: 3rem; margin-bottom: 10px;">📂</div>
+                                <h3>Pick a File</h3>
+                                <p>Click here or drag a file (Even 100GB is okay!)</p>
+                                <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(this.files)">
+                            </div>
+
+                            <div id="fileActions" class="mt-3 p-3" style="display:none; background: #dfe6e9; border-radius: 15px;">
+                                <h4 id="fileName" style="word-break: break-all;"></h4>
+                                <p class="text-muted" id="fileSize"></p>
+                                <button class="btn btn-success w-100" onclick="initiateTransfer()">🚀 ACTION BEAM! (Send)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6" id="receiverUI" style="display:none;">
+                        <div class="panel">
+                             <div class="d-flex justify-content-between">
+                                <span class="panel-title">RECEIVER ZONE</span>
+                                <span class="panel-badge">DOWNLOAD</span>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <h4 id="receiverStatus">Waiting for sender... <br> (Is he eating Chocobi?)</h4>
+                                
+                                <div id="resumeControl" style="display:none;" class="alert alert-warning mt-3">
+                                    <strong>File found!</strong>
+                                    Sender has <span id="remoteFileName"></span>.
+                                    <div class="mt-2 d-flex gap-2">
+                                        <button class="btn btn-sm btn-warning flex-grow-1" onclick="requestResume()">Resume</button>
+                                        <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="requestNew()">Restart</button>
+                                    </div>
+                                </div>
+
+                                <button id="saveAndStartBtn" class="btn btn-success mt-3 w-100" style="display:none;" onclick="prepareSaveAndStart()">
+                                    💾 SAVE & START DOWNLOAD
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="stats-row">
-                    <span>Speed: <strong id="speedDisplay">0 MB/s</strong></span>
-                    <span>ETA: <strong id="timeDisplay">--:--</strong></span>
+
+                <div class="progress-wrapper">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>TRANSFER PROGRESS</strong>
+                        <span style="color: var(--action-blue);">Direct P2P Link Active</span>
+                    </div>
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2" style="font-weight: 700;">
+                        <span>Speed: <span id="speedDisplay" style="color: var(--shin-red);">0 MB/s</span></span>
+                        <span>Time Left: <span id="timeDisplay">--:--</span></span>
+                    </div>
+                </div>
+
+                <div class="log-container">
+                    <div class="log-header">SYSTEM DIARY</div>
+                    <div id="logs"></div>
                 </div>
             </div>
 
-            <div class="log-container">
-                <div class="log-header">
-                    <span class="label">Transfer log</span>
-                    <span class="right">Latest events at bottom</span>
-                </div>
-                <div id="logs"></div>
-            </div>
         </div>
     </div>
 </div>
@@ -634,7 +494,9 @@ HTML_CONTENT = r"""
         try {
             if ('wakeLock' in navigator) {
                 const lock = await navigator.wakeLock.request('screen');
-                document.getElementById('wakeLockStatus').innerText = "☀️ Screen kept awake";
+                document.getElementById('wakeLockStatus').innerText = "☀️ Screen Awake!";
+                document.getElementById('wakeLockStatus').style.background = "#2ed573";
+                document.getElementById('wakeLockStatus').style.color = "white";
                 log("Screen Wake Lock active");
             }
         } catch (err) {
@@ -645,7 +507,7 @@ HTML_CONTENT = r"""
     // FILE SYSTEM SUPPORT
     const useNativeFS = ('showSaveFilePicker' in window);
     document.getElementById('fsStatus').innerText =
-        useNativeFS ? "💾 Native direct-write available" : "💾 Using StreamSaver fallback";
+        useNativeFS ? "💾 Direct Save Ready" : "💾 StreamSaver Mode";
 
     // LOGGING
     function log(msg) {
@@ -686,7 +548,7 @@ HTML_CONTENT = r"""
         document.getElementById('step1').style.display = 'none';
         document.getElementById('step2').style.display = 'block';
         document.getElementById('senderWaiting').style.display = 'block';
-        document.getElementById('roomIdDisplay').innerText = `Room ID: ${roomId}`;
+        document.getElementById('roomIdDisplay').innerText = roomId;
         socket.send(JSON.stringify({ type: 'join', room: roomId }));
         requestWakeLock();
     }
@@ -704,6 +566,7 @@ HTML_CONTENT = r"""
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step3').style.display = 'block';
         document.getElementById('receiverUI').style.display = 'block';
+        document.getElementById('senderUI').style.display = 'none'; // Ensure sender UI is hidden
     }
 
     // WEBRTC
@@ -712,6 +575,7 @@ HTML_CONTENT = r"""
             document.getElementById('step2').style.display = 'none';
             document.getElementById('step3').style.display = 'block';
             document.getElementById('senderUI').style.display = 'block';
+            document.getElementById('receiverUI').style.display = 'none';
         }
 
         peerConnection = new RTCPeerConnection(rtcConfig);
@@ -723,7 +587,7 @@ HTML_CONTENT = r"""
         };
 
         peerConnection.onconnectionstatechange = () => {
-            log("PeerConnection state: " + peerConnection.connectionState);
+            log("Connection state: " + peerConnection.connectionState);
         };
 
         if (isInitiator) {
@@ -765,8 +629,8 @@ HTML_CONTENT = r"""
     function setupDataChannel(channel) {
         channel.binaryType = 'arraybuffer';
 
-        channel.onopen = () => log("P2P DataChannel open");
-        channel.onclose = () => log("P2P DataChannel closed");
+        channel.onopen = () => log("P2P Pipe is OPEN!");
+        channel.onclose = () => log("P2P Pipe closed");
         channel.onerror = (err) => logError("DataChannel error", err);
 
         channel.onmessage = async (e) => {
@@ -801,7 +665,7 @@ HTML_CONTENT = r"""
         document.getElementById('fileSize').innerText =
             (selectedFile.size / (1024*1024*1024)).toFixed(2) + " GB";
         document.getElementById('fileActions').style.display = 'block';
-        log("Selected file: " + selectedFile.name + " (" + selectedFile.size + " bytes)");
+        log("File ready: " + selectedFile.name);
     }
 
     function initiateTransfer() {
@@ -810,7 +674,7 @@ HTML_CONTENT = r"""
             return;
         }
         if (!dataChannel || dataChannel.readyState !== 'open') {
-            log("DataChannel not ready yet. Wait for P2P connection.");
+            log("Wait! Connection not ready yet.");
             return;
         }
         dataChannel.send(JSON.stringify({
@@ -818,20 +682,14 @@ HTML_CONTENT = r"""
             name: selectedFile.name,
             size: selectedFile.size
         }));
-        log("Metadata sent. Waiting for receiver to choose save location…");
+        log("Sent file details. Waiting for receiver...");
     }
 
     async function startSendingChunks(offset) {
-        if (!selectedFile) {
-            log("No file selected on sender side.");
-            return;
-        }
-        if (!dataChannel || dataChannel.readyState !== 'open') {
-            log("DataChannel not open. Cannot start sending.");
-            return;
-        }
+        if (!selectedFile) return;
+        if (!dataChannel || dataChannel.readyState !== 'open') return;
 
-        log(`Starting transfer from offset: ${offset}`);
+        log(`Starting transfer from: ${offset}`);
         transferState.offset = offset;
         transferState.startTime = Date.now();
         transferState.lastChunkTime = Date.now();
@@ -842,7 +700,7 @@ HTML_CONTENT = r"""
 
         function readNext() {
             if (transferState.offset >= selectedFile.size) {
-                log("Transfer complete");
+                log("Transfer Finished!");
                 return;
             }
 
@@ -884,8 +742,8 @@ HTML_CONTENT = r"""
         transferState.fileName = meta.name;
         transferState.fileSize = meta.size;
         document.getElementById('receiverStatus').innerText =
-            "Incoming file: " + meta.name + " (" + meta.size + " bytes)";
-        log("Received metadata: " + meta.name + " (" + meta.size + " bytes)");
+            "Ready to download: " + meta.name + "\n(" + (meta.size/(1024*1024)).toFixed(1) + " MB)";
+        log("Received file info: " + meta.name);
 
         const btn = document.getElementById('saveAndStartBtn');
         btn.style.display = 'inline-block';
@@ -894,10 +752,7 @@ HTML_CONTENT = r"""
 
     async function prepareSaveAndStart() {
         const btn = document.getElementById('saveAndStartBtn');
-        if (!pendingMeta) {
-            log("No file metadata received yet.");
-            return;
-        }
+        if (!pendingMeta) return;
         const meta = pendingMeta;
         btn.disabled = true;
 
@@ -907,15 +762,15 @@ HTML_CONTENT = r"""
                 const writable = await handle.createWritable();
                 writer = writable;
                 usingNativeFS = true;
-                log("Save location selected (Native FS).");
+                log("Saving directly to disk.");
             } else {
                 if (window.streamSaver) {
                     const fileStream = streamSaver.createWriteStream(meta.name, { size: meta.size });
                     writer = fileStream.getWriter();
                     usingNativeFS = false;
-                    log("Save location using StreamSaver fallback.");
+                    log("Using StreamSaver fallback.");
                 } else {
-                    throw new Error("StreamSaver not available and Native FS not supported.");
+                    throw new Error("No saving method available.");
                 }
             }
 
@@ -929,17 +784,17 @@ HTML_CONTENT = r"""
             requestResume();
         } catch (e) {
             btn.disabled = false;
-            logError("File save cancelled or failed", e);
-            alert("Failed to open save file dialog. Use Chrome on https:// or localhost and allow file access.");
+            logError("Save cancelled", e);
+            alert("Could not start save.");
         }
     }
 
     function requestResume() {
         if (!dataChannel || dataChannel.readyState !== 'open') {
-            log("Cannot request resume: DataChannel not open yet.");
+            log("Connection lost.");
             return;
         }
-        log("Requesting resume from offset " + receivedBytes);
+        log("Asking sender to start...");
         dataChannel.send(JSON.stringify({ type: 'request_offset', offset: receivedBytes }));
     }
 
@@ -951,10 +806,7 @@ HTML_CONTENT = r"""
     }
 
     async function handleIncomingChunk(buffer) {
-        if (!writer) {
-            logError("Writer not initialized on receiver side yet", "");
-            return;
-        }
+        if (!writer) return;
 
         try {
             if (usingNativeFS) {
@@ -963,8 +815,7 @@ HTML_CONTENT = r"""
                 await writer.write(new Uint8Array(buffer));
             }
         } catch (err) {
-            logError("Write failed (receiver). This is likely the 'failed save' you saw", err);
-            alert("Write failed while saving file. See logs for details.");
+            logError("Write failed", err);
             return;
         }
 
@@ -973,16 +824,15 @@ HTML_CONTENT = r"""
         updateProgress(receivedBytes, transferState.fileSize);
 
         if (receivedBytes >= transferState.fileSize) {
-            log("Download finished");
+            log("Download Complete! Yuhuu!");
             try {
                 if (usingNativeFS) {
                     await writer.close();
                 } else {
                     writer.close();
                 }
-                log("File stream closed successfully.");
             } catch (err) {
-                logError("Error closing writer", err);
+                logError("Error closing file", err);
             }
         }
     }
@@ -1025,26 +875,25 @@ HTML_CONTENT = r"""
         }
     }
 
-    // DRAG & DROP + CLICK (fixed)
+    // DRAG & DROP
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
 
-    // FIX: click to open file picker
     dropZone.addEventListener('click', () => {
         fileInput.click();
     });
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.classList.add('border-primary');
+        dropZone.style.background = "#fab1a0"; // light red
     });
     dropZone.addEventListener('dragleave', (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-primary');
+        dropZone.style.background = "#f1f2f6";
     });
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-primary');
+        dropZone.style.background = "#f1f2f6";
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             handleFileSelect(e.dataTransfer.files);
         }
