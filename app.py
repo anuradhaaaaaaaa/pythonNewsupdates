@@ -4,7 +4,7 @@ import logging
 from aiohttp import web
 
 # --- CONFIGURATION ---
-PORT = int(os.environ.get("PORT", 8080))
+PORT = int(os.environ.get("PORT", 5050))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("P2P_Transfer_100GB")
 
@@ -608,4 +608,5 @@ app['rooms'] = {}
 app.add_routes([web.get('/', index), web.get('/ws', websocket_handler)])
 
 if __name__ == '__main__':
-    web.run_app(app, host="127.0.0.1", port=PORT)
+    web.run_app(app, host="0.0.0.0", port=PORT)
+
