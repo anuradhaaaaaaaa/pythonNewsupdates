@@ -40,19 +40,17 @@ HTML_CONTENT = r"""
             height: 100vh;
             width: 100vw;
             background-color: #70a1ff;
-            /* Polka dot background like Shin Chan transitions */
             background-image: radial-gradient(var(--white) 15%, transparent 16%),
                               radial-gradient(var(--white) 15%, transparent 16%);
             background-size: 60px 60px;
             background-position: 0 0, 30px 30px;
             font-family: 'Fredoka', cursive;
-            overflow: hidden; /* PC only, no scroll on main body */
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* --- CARTOON CONTAINERS --- */
         .app-shell {
             width: 90%;
             height: 90%;
@@ -73,7 +71,6 @@ HTML_CONTENT = r"""
             position: relative;
         }
 
-        /* Decorative Header (Action Kamen Style) */
         .shin-header {
             background: var(--shin-red);
             padding: 20px;
@@ -99,21 +96,6 @@ HTML_CONTENT = r"""
             font-size: 1.1rem;
         }
 
-        /* Status badges */
-        .status-chips {
-            display: flex;
-            gap: 10px;
-        }
-        .chip {
-            background: var(--white);
-            border: 3px solid var(--outline);
-            border-radius: 15px;
-            padding: 5px 15px;
-            font-weight: 700;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
-        }
-
-        /* --- CONTENT AREA --- */
         .stage-content {
             padding: 40px;
             flex: 1;
@@ -124,7 +106,6 @@ HTML_CONTENT = r"""
             justify-content: center;
         }
 
-        /* --- BUTTONS (BOUNCY) --- */
         .btn {
             border: 3px solid var(--outline) !important;
             font-weight: 700;
@@ -138,37 +119,14 @@ HTML_CONTENT = r"""
             top: 0;
         }
 
-        .btn:active {
-            top: 6px;
-            box-shadow: 0 0 0 var(--outline);
-        }
+        .btn:active { top: 6px; box-shadow: 0 0 0 var(--outline); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; top: 6px; }
 
-        .btn-primary {
-            background-color: var(--shin-red);
-            color: var(--shin-yellow);
-        }
-        .btn-primary:hover {
-            background-color: #ff6b81;
-            color: var(--white);
-            transform: scale(1.05);
-        }
+        .btn-primary { background-color: var(--shin-red); color: var(--shin-yellow); }
+        .btn-outline-light { background-color: var(--action-blue); color: var(--white); }
+        .btn-success { background-color: var(--chocobi-green); color: var(--white); }
+        .btn-warning { background-color: var(--shin-yellow); color: var(--outline); }
 
-        .btn-outline-light {
-            background-color: var(--action-blue);
-            color: var(--white);
-        }
-        .btn-outline-light:hover {
-            background-color: #5352ed;
-            color: var(--white);
-            transform: scale(1.05);
-        }
-
-        .btn-success {
-            background-color: var(--chocobi-green);
-            color: var(--white);
-        }
-
-        /* --- INPUTS --- */
         input[type="text"] {
             border: 3px solid var(--outline);
             border-radius: 20px;
@@ -181,35 +139,18 @@ HTML_CONTENT = r"""
             box-shadow: inset 4px 4px 0px rgba(0,0,0,0.1);
         }
 
-        /* --- PANELS (Chocobi Box Style) --- */
         .panel {
             background: var(--white);
             border: 3px solid var(--outline);
             border-radius: 20px;
             padding: 25px;
-            box-shadow: 8px 8px 0px var(--chocobi-green); /* Green Shadow */
+            box-shadow: 8px 8px 0px var(--chocobi-green);
             margin-bottom: 20px;
             position: relative;
         }
 
-        .panel-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--outline);
-            margin-bottom: 5px;
-        }
+        .panel-title { font-size: 1.5rem; font-weight: 800; color: var(--outline); }
         
-        .panel-badge {
-            background: var(--shin-yellow);
-            border: 2px solid var(--outline);
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        /* --- DROP ZONE --- */
         #dropZone {
             border: 4px dashed var(--action-blue);
             border-radius: 20px;
@@ -219,18 +160,8 @@ HTML_CONTENT = r"""
             cursor: pointer;
             transition: 0.3s;
         }
+        #dropZone:hover { background: #dfe4ea; transform: rotate(-1deg) scale(1.02); }
 
-        #dropZone:hover {
-            background: #dfe4ea;
-            transform: rotate(-1deg) scale(1.02);
-        }
-
-        #dropZone h3 {
-            font-weight: 800;
-            color: var(--action-blue);
-        }
-
-        /* --- PROGRESS BAR --- */
         .progress-wrapper {
             margin-top: 20px;
             border: 3px solid var(--outline);
@@ -247,14 +178,8 @@ HTML_CONTENT = r"""
             background: var(--white);
             overflow: hidden;
         }
+        .progress-bar { background-color: var(--chocobi-green); }
 
-        .progress-bar {
-            background-color: var(--chocobi-green);
-            background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);
-            background-size: 1rem 1rem;
-        }
-
-        /* --- LOGS (Comic Speech Bubble) --- */
         .log-container {
             margin-top: 20px;
             background: var(--white);
@@ -282,74 +207,53 @@ HTML_CONTENT = r"""
         }
 
         .text-red { color: var(--shin-red); font-weight: bold; }
+        .text-green { color: var(--chocobi-green); font-weight: bold; }
 
-        /* --- DECORATIONS --- */
-        .star-decoration {
-            font-size: 50px;
-            position: absolute;
-            z-index: 0;
-            animation: spin 10s linear infinite;
-            opacity: 0.2;
-            pointer-events: none;
+        /* Connection Status Badge */
+        .conn-status {
+            background: var(--outline);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
         }
+        .conn-status.connected { background: var(--chocobi-green); }
+        .conn-status.failed { background: var(--shin-red); }
+        .conn-status.connecting { background: var(--shin-yellow); color: black; }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Step Visibility Utilities */
+        /* Step Utilities */
         #step1, #step2, #step3 { width: 100%; max-width: 900px; margin: 0 auto; }
         
-        .role-buttons {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
-            margin-top: 40px;
-        }
-
+        .role-buttons { display: flex; gap: 30px; justify-content: center; margin-top: 40px; }
         .role-card {
-            flex: 1;
-            padding: 30px;
-            border: 3px solid var(--outline);
-            border-radius: 25px;
-            text-align: center;
-            background: var(--white);
-            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            flex: 1; padding: 30px; border: 3px solid var(--outline); border-radius: 25px;
+            text-align: center; background: var(--white); box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
             transition: 0.3s;
         }
-        .role-card:hover {
-            transform: translateY(-10px);
-        }
+        .role-card:hover { transform: translateY(-10px); }
 
-        /* Step 2 Room ID Styling */
         #roomIdDisplay {
-            font-size: 3rem;
-            color: var(--shin-red);
-            font-weight: 900;
-            letter-spacing: 5px;
+            font-size: 3rem; color: var(--shin-red); font-weight: 900; letter-spacing: 5px;
             text-shadow: 2px 2px 0px var(--outline);
         }
-
     </style>
 </head>
 <body>
 
 <div style="position:absolute; top: 10px; left: 10px; font-size: 4rem;">⭐</div>
 <div style="position:absolute; bottom: 10px; right: 10px; font-size: 4rem;">🦕</div>
-<div style="position:absolute; top: 40%; left: 5%; font-size: 3rem; opacity: 0.5;">🍪</div>
-<div style="position:absolute; top: 20%; right: 10%; font-size: 3rem; opacity: 0.5;">👽</div>
 
 <div class="app-shell">
     <div class="main-stage">
         <header class="shin-header">
             <div class="app-title">
-                <h1>
-                    ⚡ SHIN-CHAN TRANSFER
-                </h1>
+                <h1>⚡ SHIN-CHAN TRANSFER</h1>
                 <p>Oho! Send Big Files P2P! No Servers!</p>
             </div>
-            <div class="status-chips">
-                <div class="chip" style="color: var(--chocobi-green);">
-                    <span id="fsStatus">Checking File System...</span>
-                </div>
+            <div class="d-flex align-items-center gap-3">
+                 <div id="connectionBadge" class="conn-status" style="display:none;">Offline</div>
             </div>
         </header>
 
@@ -371,9 +275,6 @@ HTML_CONTENT = r"""
                         <button class="btn btn-outline-light w-100 mt-2" onclick="startReceiver()">Start Download</button>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                     <span id="wakeLockStatus" class="chip" style="background:var(--shin-skin);">😴 Screen might sleep</span>
-                </div>
             </div>
 
             <div id="step2" style="display:none;" class="text-center">
@@ -390,31 +291,38 @@ HTML_CONTENT = r"""
                     <div id="senderWaiting" style="display:none;">
                         <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
                         <h4 class="mt-3">Waiting for friend to join...</h4>
-                        <p class="text-muted">Don't close this window!</p>
                     </div>
                 </div>
             </div>
 
             <div id="step3" style="display:none;">
+                <div class="alert alert-danger" id="connectionError" style="display:none; border:3px solid black;">
+                    <strong>OH NO! Connection Failed!</strong><br>
+                    Firewalls might be blocking us. 
+                    <button class="btn btn-sm btn-warning mt-2" onclick="retryConnection()">TRY AGAIN</button>
+                </div>
+
                 <div class="row">
                     <div class="col-md-6" id="senderUI" style="display:none;">
                         <div class="panel">
                             <div class="d-flex justify-content-between">
                                 <span class="panel-title">SENDER ZONE</span>
-                                <span class="panel-badge">UPLOAD</span>
+                                <span class="panel-badge" style="background: var(--shin-yellow);">UPLOAD</span>
                             </div>
                             
                             <div id="dropZone" class="mt-3">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">📂</div>
                                 <h3>Pick a File</h3>
-                                <p>Click here or drag a file (Even 100GB is okay!)</p>
+                                <p>Click here or drag a file</p>
                                 <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelect(this.files)">
                             </div>
 
                             <div id="fileActions" class="mt-3 p-3" style="display:none; background: #dfe6e9; border-radius: 15px;">
                                 <h4 id="fileName" style="word-break: break-all;"></h4>
                                 <p class="text-muted" id="fileSize"></p>
-                                <button class="btn btn-success w-100" onclick="initiateTransfer()">🚀 ACTION BEAM! (Send)</button>
+                                <button id="sendBtn" class="btn btn-success w-100" onclick="initiateTransfer()" disabled>
+                                    ⏳ WAITING FOR CONNECTION...
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -423,21 +331,12 @@ HTML_CONTENT = r"""
                         <div class="panel">
                              <div class="d-flex justify-content-between">
                                 <span class="panel-title">RECEIVER ZONE</span>
-                                <span class="panel-badge">DOWNLOAD</span>
+                                <span class="panel-badge" style="background: var(--chocobi-green); color:white;">DOWNLOAD</span>
                             </div>
 
                             <div class="text-center mt-4">
-                                <h4 id="receiverStatus">Waiting for sender... <br> (Is he eating Chocobi?)</h4>
+                                <h4 id="receiverStatus">Waiting for sender...</h4>
                                 
-                                <div id="resumeControl" style="display:none;" class="alert alert-warning mt-3">
-                                    <strong>File found!</strong>
-                                    Sender has <span id="remoteFileName"></span>.
-                                    <div class="mt-2 d-flex gap-2">
-                                        <button class="btn btn-sm btn-warning flex-grow-1" onclick="requestResume()">Resume</button>
-                                        <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="requestNew()">Restart</button>
-                                    </div>
-                                </div>
-
                                 <button id="saveAndStartBtn" class="btn btn-success mt-3 w-100" style="display:none;" onclick="prepareSaveAndStart()">
                                     💾 SAVE & START DOWNLOAD
                                 </button>
@@ -449,7 +348,7 @@ HTML_CONTENT = r"""
                 <div class="progress-wrapper">
                     <div class="d-flex justify-content-between mb-2">
                         <strong>TRANSFER PROGRESS</strong>
-                        <span style="color: var(--action-blue);">Direct P2P Link Active</span>
+                        <span id="p2pStatusLabel" style="color: var(--action-blue);">Initializing...</span>
                     </div>
                     <div class="progress">
                         <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
@@ -475,39 +374,28 @@ HTML_CONTENT = r"""
     let socket, peerConnection, dataChannel;
     let roomId;
     let selectedFile;
+    let isInitiator = false;
 
-    let transferState = {
-        offset: 0,
-        fileSize: 0,
-        fileName: '',
-        startTime: 0,
-        lastChunkTime: 0,
-        lastOffset: 0
-    };
-
+    let transferState = { offset: 0, fileSize: 0, fileName: '', startTime: 0, lastChunkTime: 0, lastOffset: 0 };
     let pendingMeta = null;
 
-    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    // IMPROVED CONFIG: More STUN servers to fix connection issues
+    const rtcConfig = { 
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ] 
+    };
 
     // WAKE LOCK
     async function requestWakeLock() {
         try {
-            if ('wakeLock' in navigator) {
-                const lock = await navigator.wakeLock.request('screen');
-                document.getElementById('wakeLockStatus').innerText = "☀️ Screen Awake!";
-                document.getElementById('wakeLockStatus').style.background = "#2ed573";
-                document.getElementById('wakeLockStatus').style.color = "white";
-                log("Screen Wake Lock active");
-            }
-        } catch (err) {
-            log("Wake Lock Error: " + err.message);
-        }
+            if ('wakeLock' in navigator) await navigator.wakeLock.request('screen');
+        } catch (err) { console.log(err); }
     }
-
-    // FILE SYSTEM SUPPORT
-    const useNativeFS = ('showSaveFilePicker' in window);
-    document.getElementById('fsStatus').innerText =
-        useNativeFS ? "💾 Direct Save Ready" : "💾 StreamSaver Mode";
 
     // LOGGING
     function log(msg) {
@@ -524,12 +412,33 @@ HTML_CONTENT = r"""
         console.error("[ERROR]", msg, err);
     }
 
-    // WEBSOCKET SIGNALING
+    function updateStatus(status, type) {
+        const badge = document.getElementById('connectionBadge');
+        badge.style.display = 'block';
+        badge.innerText = status;
+        badge.className = 'conn-status ' + type;
+        
+        const statusLabel = document.getElementById('p2pStatusLabel');
+        statusLabel.innerText = status;
+
+        if(type === 'connected') {
+            document.getElementById('connectionError').style.display = 'none';
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = false;
+            btn.innerText = "🚀 ACTION BEAM! (Send)";
+            log("System Ready: P2P Tunnel Established.");
+        } else if (type === 'failed') {
+             document.getElementById('connectionError').style.display = 'block';
+             logError("Connection Failed. Firewalls might be blocking.", "");
+        }
+    }
+
+    // WEBSOCKET
     function connectSocket() {
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         socket = new WebSocket(`${protocol}//${location.host}/ws`);
 
-        socket.onopen = () => log("Signaling socket connected");
+        socket.onopen = () => log("Server connected.");
         socket.onmessage = (e) => {
             const msg = JSON.parse(e.data);
             if (msg.type === 'peer_joined') startPeerConnection(true);
@@ -538,7 +447,6 @@ HTML_CONTENT = r"""
             if (msg.type === 'candidate') handleCandidate(msg.data);
         };
         socket.onerror = (e) => logError("WebSocket error", e);
-        socket.onclose = () => log("WebSocket closed");
     }
     connectSocket();
 
@@ -566,16 +474,26 @@ HTML_CONTENT = r"""
         document.getElementById('step2').style.display = 'none';
         document.getElementById('step3').style.display = 'block';
         document.getElementById('receiverUI').style.display = 'block';
-        document.getElementById('senderUI').style.display = 'none'; // Ensure sender UI is hidden
+        updateStatus("Connecting...", "connecting");
+    }
+
+    function retryConnection() {
+        log("Retrying connection...");
+        document.getElementById('connectionError').style.display = 'none';
+        if(peerConnection) peerConnection.close();
+        // Re-initiate based on role
+        if(isInitiator) startPeerConnection(true);
+        else log("Waiting for sender to retry...");
     }
 
     // WEBRTC
-    function startPeerConnection(isInitiator) {
-        if (isInitiator) {
+    function startPeerConnection(initiator) {
+        isInitiator = initiator;
+        if (initiator) {
             document.getElementById('step2').style.display = 'none';
             document.getElementById('step3').style.display = 'block';
             document.getElementById('senderUI').style.display = 'block';
-            document.getElementById('receiverUI').style.display = 'none';
+            updateStatus("Connecting...", "connecting");
         }
 
         peerConnection = new RTCPeerConnection(rtcConfig);
@@ -587,10 +505,13 @@ HTML_CONTENT = r"""
         };
 
         peerConnection.onconnectionstatechange = () => {
-            log("Connection state: " + peerConnection.connectionState);
+            const state = peerConnection.connectionState;
+            log("Connection State: " + state);
+            if(state === 'connected') updateStatus("Connected!", "connected");
+            if(state === 'failed' || state === 'disconnected') updateStatus("Failed/Disconnected", "failed");
         };
 
-        if (isInitiator) {
+        if (initiator) {
             dataChannel = peerConnection.createDataChannel("transfer");
             setupDataChannel(dataChannel);
             peerConnection.createOffer().then(offer => {
@@ -606,7 +527,7 @@ HTML_CONTENT = r"""
     }
 
     async function handleOffer(offer) {
-        startPeerConnection(false);
+        if(!peerConnection) startPeerConnection(false);
         await peerConnection.setRemoteDescription(offer);
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
@@ -619,284 +540,149 @@ HTML_CONTENT = r"""
 
     async function handleCandidate(candidate) {
         try {
-            await peerConnection.addIceCandidate(candidate);
-        } catch (err) {
-            logError("Error adding ICE candidate", err);
-        }
+            if(peerConnection) await peerConnection.addIceCandidate(candidate);
+        } catch (err) { console.error(err); }
     }
 
     // DATA CHANNEL
     function setupDataChannel(channel) {
         channel.binaryType = 'arraybuffer';
-
-        channel.onopen = () => log("P2P Pipe is OPEN!");
-        channel.onclose = () => log("P2P Pipe closed");
-        channel.onerror = (err) => logError("DataChannel error", err);
-
+        channel.onopen = () => {
+            log("P2P Pipe OPEN!");
+            updateStatus("Connected!", "connected");
+        };
+        channel.onclose = () => updateStatus("Closed", "failed");
+        
         channel.onmessage = async (e) => {
             const data = e.data;
             if (typeof data === 'string') {
-                let msg;
-                try {
-                    msg = JSON.parse(data);
-                } catch {
-                    log("Received non-JSON string: " + data);
-                    return;
-                }
-
-                if (msg.type === 'request_offset') {
-                    startSendingChunks(msg.offset || 0);
-                }
-
-                if (msg.type === 'file_meta') {
-                    handleFileMeta(msg);
-                }
+                const msg = JSON.parse(data);
+                if (msg.type === 'request_offset') startSendingChunks(msg.offset || 0);
+                if (msg.type === 'file_meta') handleFileMeta(msg);
             } else {
                 await handleIncomingChunk(data);
             }
         };
     }
 
-    // SENDER
+    // SENDER LOGIC
     function handleFileSelect(files) {
         selectedFile = files[0];
         if (!selectedFile) return;
         document.getElementById('fileName').innerText = selectedFile.name;
-        document.getElementById('fileSize').innerText =
-            (selectedFile.size / (1024*1024*1024)).toFixed(2) + " GB";
+        document.getElementById('fileSize').innerText = (selectedFile.size / (1024*1024*1024)).toFixed(2) + " GB";
         document.getElementById('fileActions').style.display = 'block';
-        log("File ready: " + selectedFile.name);
     }
 
     function initiateTransfer() {
-        if (!selectedFile) {
-            log("No file selected");
-            return;
-        }
         if (!dataChannel || dataChannel.readyState !== 'open') {
-            log("Wait! Connection not ready yet.");
+            alert("Connection not ready! Please wait for the green 'Connected' status.");
             return;
         }
-        dataChannel.send(JSON.stringify({
-            type: 'file_meta',
-            name: selectedFile.name,
-            size: selectedFile.size
-        }));
-        log("Sent file details. Waiting for receiver...");
+        dataChannel.send(JSON.stringify({ type: 'file_meta', name: selectedFile.name, size: selectedFile.size }));
+        log("Metadata sent. Waiting for receiver...");
     }
 
     async function startSendingChunks(offset) {
-        if (!selectedFile) return;
-        if (!dataChannel || dataChannel.readyState !== 'open') return;
-
-        log(`Starting transfer from: ${offset}`);
+        const CHUNK_SIZE = 64 * 1024; 
+        const fileReader = new FileReader();
         transferState.offset = offset;
         transferState.startTime = Date.now();
         transferState.lastChunkTime = Date.now();
         transferState.lastOffset = offset;
 
-        const CHUNK_SIZE = 64 * 1024;
-        const fileReader = new FileReader();
-
         function readNext() {
-            if (transferState.offset >= selectedFile.size) {
-                log("Transfer Finished!");
-                return;
-            }
-
-            if (dataChannel.bufferedAmount > 10 * 1024 * 1024) {
-                setTimeout(readNext, 50);
-                return;
-            }
-
+            if (transferState.offset >= selectedFile.size) { log("Transfer Finished!"); return; }
+            if (dataChannel.bufferedAmount > 10 * 1024 * 1024) { setTimeout(readNext, 50); return; }
             const slice = selectedFile.slice(transferState.offset, transferState.offset + CHUNK_SIZE);
             fileReader.readAsArrayBuffer(slice);
         }
 
         fileReader.onload = (e) => {
-            try {
-                dataChannel.send(e.target.result);
-            } catch (err) {
-                logError("Error sending chunk", err);
-                return;
-            }
+            try { dataChannel.send(e.target.result); } catch (err) { logError("Send Error", err); return; }
             transferState.offset += e.target.result.byteLength;
             updateProgress(transferState.offset, selectedFile.size);
             readNext();
         };
-
-        fileReader.onerror = (e) => {
-            logError("FileReader error", e);
-        };
-
         readNext();
     }
 
-    // RECEIVER
-    let receivedBytes = 0;
+    // RECEIVER LOGIC
     let writer = null;
-    let usingNativeFS = useNativeFS;
+    let receivedBytes = 0;
+    const useNativeFS = ('showSaveFilePicker' in window);
 
     function handleFileMeta(meta) {
         pendingMeta = meta;
-        transferState.fileName = meta.name;
         transferState.fileSize = meta.size;
-        document.getElementById('receiverStatus').innerText =
-            "Ready to download: " + meta.name + "\n(" + (meta.size/(1024*1024)).toFixed(1) + " MB)";
-        log("Received file info: " + meta.name);
-
+        document.getElementById('receiverStatus').innerText = "Ready: " + meta.name + "\n(" + (meta.size/(1024*1024)).toFixed(1) + " MB)";
         const btn = document.getElementById('saveAndStartBtn');
         btn.style.display = 'inline-block';
         btn.disabled = false;
     }
 
     async function prepareSaveAndStart() {
-        const btn = document.getElementById('saveAndStartBtn');
-        if (!pendingMeta) return;
-        const meta = pendingMeta;
-        btn.disabled = true;
-
+        document.getElementById('saveAndStartBtn').disabled = true;
         try {
             if (useNativeFS) {
-                const handle = await window.showSaveFilePicker({ suggestedName: meta.name });
-                const writable = await handle.createWritable();
-                writer = writable;
-                usingNativeFS = true;
-                log("Saving directly to disk.");
+                const handle = await window.showSaveFilePicker({ suggestedName: pendingMeta.name });
+                writer = await handle.createWritable();
             } else {
-                if (window.streamSaver) {
-                    const fileStream = streamSaver.createWriteStream(meta.name, { size: meta.size });
-                    writer = fileStream.getWriter();
-                    usingNativeFS = false;
-                    log("Using StreamSaver fallback.");
-                } else {
-                    throw new Error("No saving method available.");
-                }
+                writer = streamSaver.createWriteStream(pendingMeta.name, { size: pendingMeta.size }).getWriter();
             }
-
             receivedBytes = 0;
-            transferState.offset = 0;
             transferState.startTime = Date.now();
-            transferState.lastChunkTime = Date.now();
-            transferState.lastOffset = 0;
-            pendingMeta = null;
-
             requestResume();
         } catch (e) {
-            btn.disabled = false;
             logError("Save cancelled", e);
-            alert("Could not start save.");
+            document.getElementById('saveAndStartBtn').disabled = false;
         }
     }
 
     function requestResume() {
-        if (!dataChannel || dataChannel.readyState !== 'open') {
-            log("Connection lost.");
-            return;
-        }
-        log("Asking sender to start...");
         dataChannel.send(JSON.stringify({ type: 'request_offset', offset: receivedBytes }));
     }
 
-    function requestNew() {
-        receivedBytes = 0;
-        transferState.offset = 0;
-        updateProgress(0, transferState.fileSize || 1);
-        requestResume();
-    }
-
     async function handleIncomingChunk(buffer) {
-        if (!writer) return;
-
-        try {
-            if (usingNativeFS) {
-                await writer.write(buffer);
-            } else {
-                await writer.write(new Uint8Array(buffer));
-            }
-        } catch (err) {
-            logError("Write failed", err);
-            return;
-        }
-
+        if (useNativeFS) await writer.write(buffer);
+        else await writer.write(new Uint8Array(buffer));
         receivedBytes += buffer.byteLength;
-        document.getElementById('currentReceived').innerText = receivedBytes;
         updateProgress(receivedBytes, transferState.fileSize);
-
         if (receivedBytes >= transferState.fileSize) {
-            log("Download Complete! Yuhuu!");
-            try {
-                if (usingNativeFS) {
-                    await writer.close();
-                } else {
-                    writer.close();
-                }
-            } catch (err) {
-                logError("Error closing file", err);
-            }
+            log("Download Complete!");
+            if(useNativeFS) await writer.close(); else writer.close();
         }
     }
 
-    // UTILS
+    // PROGRESS & UTILS
     function updateProgress(current, total) {
         total = total || 1;
         const percent = ((current / total) * 100).toFixed(2);
-        const bar = document.getElementById('progressBar');
-        bar.style.width = percent + '%';
-        bar.innerText = percent + '%';
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('progressBar').innerText = percent + '%';
 
         const now = Date.now();
-        if (!transferState.lastChunkTime) {
-            transferState.lastChunkTime = now;
-            transferState.lastOffset = current;
-        }
-
         const dt = (now - transferState.lastChunkTime) / 1000;
-        const dBytes = current - transferState.lastOffset;
-
         if (dt > 0.5) {
-            const speedMB = dBytes / (1024 * 1024) / dt;
-            if (!isNaN(speedMB) && isFinite(speedMB)) {
-                document.getElementById('speedDisplay').innerText = speedMB.toFixed(2) + " MB/s";
+            const speed = (current - transferState.lastOffset) / (1024 * 1024) / dt;
+            document.getElementById('speedDisplay').innerText = speed.toFixed(2) + " MB/s";
+            if (speed > 0) {
+                const rem = (total - current) / (1024 * 1024) / speed;
+                document.getElementById('timeDisplay').innerText = Math.floor(rem/60) + ":" + Math.floor(rem%60).toString().padStart(2,'0');
             }
             transferState.lastChunkTime = now;
             transferState.lastOffset = current;
-
-            const remainingBytes = total - current;
-            if (speedMB > 0) {
-                const remainingSec = remainingBytes / (1024 * 1024) / speedMB;
-                const minutes = Math.floor(remainingSec / 60);
-                const seconds = Math.floor(remainingSec % 60);
-                document.getElementById('timeDisplay').innerText =
-                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            } else {
-                document.getElementById('timeDisplay').innerText = "--:--";
-            }
         }
     }
 
-    // DRAG & DROP
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-
-    dropZone.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.style.background = "#fab1a0"; // light red
-    });
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropZone.style.background = "#f1f2f6";
-    });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.background = "#f1f2f6";
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFileSelect(e.dataTransfer.files);
-        }
+    // DRAG DROP
+    const dz = document.getElementById('dropZone');
+    dz.addEventListener('click', () => document.getElementById('fileInput').click());
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.background = "#fab1a0"; });
+    dz.addEventListener('dragleave', e => { e.preventDefault(); dz.style.background = "#f1f2f6"; });
+    dz.addEventListener('drop', e => {
+        e.preventDefault(); dz.style.background = "#f1f2f6";
+        if(e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files);
     });
 </script>
 </body>
@@ -951,3 +737,4 @@ app.add_routes([web.get('/', index), web.get('/ws', websocket_handler)])
 
 if __name__ == '__main__':
     web.run_app(app, host="0.0.0.0", port=PORT)
+
