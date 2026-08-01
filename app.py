@@ -1,11 +1,11 @@
 import asyncio
 import os
+import sys
 import json
 import logging
 from typing import Dict, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("SendWitchServer")
@@ -115,7 +115,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 session["receiver"] = None
                 if session.get("sender"):
                     try:
-                        await session["sender"].send_json({"type": "peer_disconnected", "role": "receiver"})
+                        await session["sender"].send_json({"type": "peer_disconnected", "role": "sender"})
                     except Exception:
                         pass
 
@@ -131,4 +131,4 @@ async def get_index():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=port)
