@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%2310b981'/></svg>">
+  
+  <title>SendWitch — P2P File Transfer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #050505;
+      --card-bg: #0d0d0d;
+      --card-border: #222222;
+      --card-border-hover: #333333;
+      --input-bg: #000000;
+      --input-border: #2a2a2a;
+      --text-main: #f0f0f0;
+      --text-dim: #888888;
+      --text-muted: #555555;
+      --accent-gray: #333333;
+      --accent-gray-hover: #444444;
+      --button-bg: #2a2a2a;
+      --button-bg-hover: #3a3a3a;
+      --button-disabled: #181818;
+      --accent-green: #10b981;
+      --accent-blue: #3b82f6;
+      --accent-yellow: #f59e0b;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .brand-header {
+      width: 100%;
+      max-width: 1080px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 0 4px;
+    }
+
+    .brand-title {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+    }
+
+    .brand-title .logo-badge {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    .relay-status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f0f0f;
+      border: 1px solid #222;
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-green);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    .status-dot.connecting {
+      background-color: var(--accent-yellow);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    .status-dot.offline {
+      background-color: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1080px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid #2a2a2a;
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        grid-template-columns: 1fr;
+        border: none;
+        gap: 16px;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 0;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      min-height: 540px;
+      justify-content: space-between;
+    }
+
+    .card + .card {
+      border-left: 1px solid #2a2a2a;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        border: 1px solid #2a2a2a;
+        min-height: 480px;
+      }
+      .card + .card {
+        border-left: 1px solid #2a2a2a;
+      }
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-number {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      border: 1px solid var(--card-border-hover);
+      padding: 2px 7px;
+      border-radius: 2px;
+      background: #141414;
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .card-icon {
+      color: var(--text-dim);
+      width: 20px;
+      height: 20px;
+    }
+
+    .card-subtitle {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+
+    .drop-zone {
+      border: 1px dashed #383838;
+      background: #080808;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      min-height: 120px;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #666666;
+      background: #0f0f0f;
+    }
+
+    .drop-title {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .drop-sub {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .file-meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      padding: 0 2px;
+    }
+
+    .selected-files-list {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111;
+      border: 1px solid #222;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .file-item-name {
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 240px;
+    }
+
+    .file-item-size {
+      color: #777;
+    }
+
+    .file-item-remove {
+      color: #888;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 16px;
+      background: transparent;
+      border: none;
+    }
+
+    .file-item-remove:hover {
+      color: #ef4444;
+    }
+
+    .field-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .code-input-group {
+      display: flex;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .code-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .code-input:focus {
+      border-color: #555555;
+    }
+
+    .code-btn {
+      background: #161616;
+      border: 1px solid var(--input-border);
+      border-left: none;
+      color: #aaaaaa;
+      width: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .code-btn:hover {
+      background: #222222;
+      color: #ffffff;
+    }
+
+    .code-help-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--button-bg);
+      color: #ffffff;
+      border: none;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.2s, opacity 0.2s;
+      margin-top: auto;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      background: var(--button-bg-hover);
+    }
+
+    .action-btn:disabled {
+      background: var(--button-disabled);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 12px 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      border-radius: 4px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-box {
+      background: #0d0d0d;
+      border: 1px solid #2a2a2a;
+      width: 100%;
+      max-width: 500px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    }
+
+    .modal-title {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-subtitle {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #ffffff;
+      transition: width 0.15s ease;
+    }
+
+    .progress-stats {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+
+    .modal-actions-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      background: #1c1c1c;
+      border: 1px solid #333;
+      color: #ccc;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .modal-btn:hover {
+      background: #282828;
+      color: #fff;
+    }
+
+    .modal-btn.danger:hover {
+      background: #3f1515;
+      border-color: #7f1d1d;
+      color: #ef4444;
+    }
+
+    .footer-notes {
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="brand-header">
+    <div class="brand-title">
+      S e n d W i t c h
+      <span class="logo-badge">P2P FILE TRANSFER</span>
+    </div>
+    <div class="relay-status" id="relayStatus">
+      <span class="status-dot connecting" id="statusDot"></span>
+      <span id="statusText">Connecting to signaling server...</span>
+    </div>
+  </header>
+
+  <!-- Main App Layout -->
+  <main class="app-container">
+    
+    <!-- 01 SEND CARD -->
+    <section class="card">
+      <div>
+        <div class="card-header-row">
+          <div class="card-title-group">
+            <span class="step-number">01</span>
+            <h2 class="card-title">Send</h2>
+          </div>
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </div>
+        <p class="card-subtitle">Choose files. Share transfer code for direct P2P transfer.</p>
+
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-title">Choose files</div>
+          <div class="drop-sub">or drop them here</div>
+          <input type="file" id="fileInput" multiple style="display: none;">
+        </div>
+
+        <div class="selected-files-list" id="selectedFilesList"></div>
+
+        <div class="file-meta-row">
+          <span id="fileCountText">0 files</span>
+          <span id="fileSizeText">0 B</span>
+        </div>
+
+        <div class="field-label">TRANSFER CODE</div>
+        <div class="code-input-group">
+          <input type="text" id="sendCodeInput" class="code-input" readonly autocomplete="off">
+          <button class="code-btn" id="refreshCodeBtn" title="Regenerate code">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+          <button class="code-btn" id="copyCodeBtn" title="Copy code">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="action-btn" id="sendBtn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+        Send files
+      </button>
+    </section>
+
+    <!-- 02 RECEIVE CARD -->
+    <section class="card">
+      <div>
+        <div class="card-header-row">
+          <div class="card-title-group">
+            <span class="step-number">02</span>
+            <h2 class="card-title">Receive</h2>
+          </div>
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </div>
+        <p class="card-subtitle">Enter the sender's code to receive files chunk-by-chunk.</p>
+
+        <div class="field-label">TRANSFER CODE</div>
+        <div class="code-input-group">
+          <input type="text" id="receiveCodeInput" class="code-input" placeholder="1234-word-word-word" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="code-help-text">Enter code to start or resume direct P2P transfer.</p>
+      </div>
+
+      <button class="action-btn" id="receiveBtn" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+        Receive
+      </button>
+    </section>
+
+  </main>
+
+  <footer class="footer-notes">
+    Direct P2P File Transfer with Resume Support — Zero Server Bandwidth
+  </footer>
+
+  <div class="toast" id="toast">Code copied to clipboard</div>
+
+  <!-- Progress Modal -->
+  <div class="modal-overlay" id="progressModal">
+    <div class="modal-box">
+      <div class="modal-title" id="modalTitle">
+        <span>Transferring...</span>
+        <span id="modalPercentage">0%</span>
+      </div>
+      <div class="modal-subtitle" id="modalSubtitle">Initializing connection...</div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+
+      <div class="progress-stats">
+        <span id="transferSpeed">0 KB/s</span>
+        <span id="transferMeta">0 B / 0 B</span>
+      </div>
+
+      <div class="modal-actions-row">
+        <button class="modal-btn" id="modalPauseBtn" style="display: none;">Pause</button>
+        <button class="modal-btn danger" id="modalCancelBtn">Cancel Transfer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Word List for Code Generation ---
+    const WORD_LIST = [
+      "hilton", "precise", "jimmy", "crimson", "swift", "falcon", "orbit", "beacon", "shadow", "matrix",
+      "cipher", "vortex", "quantum", "cobalt", "amber", "lunar", "stellar", "nebula", "zenith", "vertex",
+      "solaris", "titan", "aurora", "phoenix", "hyper", "vector", "delta", "pulse", "echo", "nexus"
+    ];
+
+    function generateCode() {
+      const prefix = Math.floor(1000 + Math.random() * 9000);
+      const w1 = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+      const w2 = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+      const w3 = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+      return `${prefix}-${w1}-${w2}-${w3}`;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // --- IndexedDB for Resume Storage & Large Files ---
+    class StorageEngine {
+      constructor() {
+        this.db = null;
+      }
+
+      async init() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open("SendWitchDB", 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("transfers")) {
+              db.createObjectStore("transfers", { keyPath: "fileId" });
+            }
+            if (!db.objectStoreNames.contains("chunks")) {
+              const store = db.createObjectStore("chunks", { keyPath: ["fileId", "chunkIndex"] });
+              store.createIndex("fileId", "fileId", { unique: false });
+            }
+          };
+          req.onsuccess = (e) => {
+            this.db = e.target.result;
+            resolve();
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async getTransferMeta(fileId) {
+        if (!this.db) await this.init();
+        return new Promise((resolve) => {
+          const tx = this.db.transaction("transfers", "readonly");
+          const req = tx.objectStore("transfers").get(fileId);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      }
+
+      async saveTransferMeta(meta) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction("transfers", "readwrite");
+          tx.objectStore("transfers").put(meta);
+          tx.oncomplete = () => resolve();
+          tx.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async saveChunk(fileId, chunkIndex, data) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction("chunks", "readwrite");
+          tx.objectStore("chunks").put({ fileId, chunkIndex, data });
+          tx.oncomplete = () => resolve();
+          tx.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async getChunks(fileId) {
+        if (!this.db) await this.init();
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction("chunks", "readonly");
+          const index = tx.objectStore("chunks").index("fileId");
+          const req = index.getAll(fileId);
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async clearFile(fileId) {
+        if (!this.db) await this.init();
+        const tx = this.db.transaction(["transfers", "chunks"], "readwrite");
+        tx.objectStore("transfers").delete(fileId);
+        
+        const chunkStore = tx.objectStore("chunks");
+        const index = chunkStore.index("fileId");
+        const req = index.openKeyCursor(IDBKeyRange.only(fileId));
+        req.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            chunkStore.delete(cursor.primaryKey);
+            cursor.continue();
+          }
+        };
+      }
+    }
+
+    const storage = new StorageEngine();
+
+    // --- State Variables ---
+    const CHUNK_SIZE = 128 * 1024; // 128 KB chunks
+    let selectedFiles = [];
+    let currentCode = generateCode();
+    let ws = null;
+    let peerConn = null;
+    let dataChannel = null;
+    let isSender = false;
+    let activeRole = null; // 'sender' | 'receiver'
+    let transferState = 'idle'; // 'idle' | 'transferring' | 'paused'
+    
+    // Transfer tracking
+    let manifest = [];
+    let currentFileIndex = 0;
+    let currentChunkIndex = 0;
+    let totalBytesAllFiles = 0;
+    let transferredBytesAllFiles = 0;
+    let startTime = 0;
+    let writableStream = null;
+    let currentFileBuffer = [];
+
+    // DOM Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFilesList = document.getElementById('selectedFilesList');
+    const fileCountText = document.getElementById('fileCountText');
+    const fileSizeText = document.getElementById('fileSizeText');
+    const sendCodeInput = document.getElementById('sendCodeInput');
+    const refreshCodeBtn = document.getElementById('refreshCodeBtn');
+    const copyCodeBtn = document.getElementById('copyCodeBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const receiveCodeInput = document.getElementById('receiveCodeInput');
+    const receiveBtn = document.getElementById('receiveBtn');
+    const toast = document.getElementById('toast');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+
+    // Modal DOM
+    const progressModal = document.getElementById('progressModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const modalPercentage = document.getElementById('modalPercentage');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const transferSpeed = document.getElementById('transferSpeed');
+    const transferMeta = document.getElementById('transferMeta');
+    const modalPauseBtn = document.getElementById('modalPauseBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+    sendCodeInput.value = currentCode;
+
+    // --- WebSocket Signaling Client ---
+    function initWebSocket() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${location.host}/ws`;
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Signaling connected';
+      };
+
+      ws.onclose = () => {
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = 'Signaling disconnected';
+        setTimeout(initWebSocket, 3000);
+      };
+
+      ws.onerror = (err) => {
+        console.warn("WebSocket error:", err);
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = 'Signaling unavailable';
+      };
+
+      ws.onmessage = async (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          handleSignalingMessage(msg);
+        } catch (e) {
+          console.error("Failed to parse signaling message:", e);
+        }
+      };
+    }
+
+    initWebSocket();
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    refreshCodeBtn.addEventListener('click', () => {
+      if (transferState !== 'idle') {
+        showToast('Finish or cancel current transfer first');
+        return;
+      }
+      currentCode = generateCode();
+      sendCodeInput.value = currentCode;
+      showToast('New code generated');
+    });
+
+    copyCodeBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(sendCodeInput.value).then(() => {
+        showToast('Code copied to clipboard');
+      }).catch(() => showToast('Code copied!'));
+    });
+
+    // File Selection & Drag & Drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) addFiles(Array.from(e.target.files));
+    });
+
+    function addFiles(files) {
+      const existing = new Set(selectedFiles.map(f => `${f.name}:${f.size}:${f.lastModified}`));
+      selectedFiles = selectedFiles.concat(files.filter(f => {
+        const key = `${f.name}:${f.size}:${f.lastModified}`;
+        if (existing.has(key)) return false;
+        existing.add(key);
+        return true;
+      }));
+      fileInput.value = '';
+      renderFileList();
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+
+    function renderFileList() {
+      selectedFilesList.innerHTML = '';
+      let totalSize = 0;
+
+      selectedFiles.forEach((file, index) => {
+        totalSize += file.size;
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        const name = document.createElement('span');
+        name.className = 'file-item-name';
+        name.title = file.name;
+        name.textContent = file.name;
+        const details = document.createElement('div');
+        const size = document.createElement('span');
+        size.className = 'file-item-size';
+        size.textContent = formatBytes(file.size);
+        const remove = document.createElement('button');
+        remove.className = 'file-item-remove';
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.addEventListener('click', () => removeFile(index));
+        details.append(size, remove);
+        item.append(name, details);
+        selectedFilesList.appendChild(item);
+      });
+
+      fileCountText.textContent = `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'}`;
+      fileSizeText.textContent = formatBytes(totalSize);
+      sendBtn.disabled = selectedFiles.length === 0;
+    }
+
+    receiveCodeInput.addEventListener('input', () => {
+      const code = receiveCodeInput.value.trim();
+      receiveBtn.disabled = code.length < 5;
+    });
+
+    // --- WebRTC Setup & Signaling ---
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    };
+
+    function setupPeerConnection() {
+      peerConn = new RTCPeerConnection(rtcConfig);
+
+      peerConn.onicecandidate = (event) => {
+        if (event.candidate) {
+          ws.send(JSON.stringify({
+            action: 'signal',
+            data: { type: 'candidate', candidate: event.candidate }
+          }));
+        }
+      };
+
+      peerConn.onconnectionstatechange = () => {
+        console.log("WebRTC state:", peerConn.connectionState);
+        if (peerConn.connectionState === 'disconnected' || peerConn.connectionState === 'failed') {
+          if (transferState === 'transferring') {
+            updateProgressModal('Connection Interrupted', 'Peer disconnected. Enter code to resume transfer.', 0);
+            transferState = 'paused';
+            modalPauseBtn.textContent = 'Resume';
+          }
+        }
+      };
+    }
+
+    // --- SENDER FLOW ---
+    sendBtn.addEventListener('click', () => {
+      if (selectedFiles.length === 0 || !ws || ws.readyState !== WebSocket.OPEN) {
+        showToast('Signaling server is not connected.');
+        return;
+      }
+      isSender = true;
+      activeRole = 'sender';
+      transferState = 'idle';
+
+      ws.send(JSON.stringify({ action: 'register_sender', code: currentCode }));
+      openProgressModal('Waiting for receiver...', `Share code: ${currentCode}`);
+    });
+
+    // --- RECEIVER FLOW ---
+    receiveBtn.addEventListener('click', () => {
+      const code = receiveCodeInput.value.trim();
+      if (!code || !ws || ws.readyState !== WebSocket.OPEN) {
+        showToast('Signaling server is not connected.');
+        return;
+      }
+      isSender = false;
+      activeRole = 'receiver';
+      transferState = 'idle';
+
+      ws.send(JSON.stringify({ action: 'connect_receiver', code: code }));
+      openProgressModal('Connecting to sender...', `Looking up transfer code: ${code}`);
+    });
+
+    async function handleSignalingMessage(msg) {
+      if (msg.type === 'registered') {
+        updateProgressModal('Waiting for receiver...', `Share transfer code: ${msg.code}`);
+      } else if (msg.type === 'error') {
+        updateProgressModal('Error', msg.message, 0);
+        setTimeout(closeProgressModal, 3000);
+      } else if (msg.type === 'peer_connected') {
+        updateProgressModal('Peer Connected', 'Establishing direct P2P data connection...', 0);
+        setupPeerConnection();
+
+        if (isSender) {
+          dataChannel = peerConn.createDataChannel('fileTransfer', { ordered: true });
+          setupDataChannel(dataChannel);
+          const offer = await peerConn.createOffer();
+          await peerConn.setLocalDescription(offer);
+          ws.send(JSON.stringify({ action: 'signal', data: { type: 'offer', offer: offer } }));
+        } else {
+          peerConn.ondatachannel = (e) => {
+            dataChannel = e.channel;
+            setupDataChannel(dataChannel);
+          };
+        }
+      } else if (msg.type === 'signal') {
+        const data = msg.data;
+        if (data.type === 'offer') {
+          if (!peerConn) setupPeerConnection();
+          peerConn.ondatachannel = (e) => {
+            dataChannel = e.channel;
+            setupDataChannel(dataChannel);
+          };
+          await peerConn.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await peerConn.createAnswer();
+          await peerConn.setLocalDescription(answer);
+          ws.send(JSON.stringify({ action: 'signal', data: { type: 'answer', answer: answer } }));
+        } else if (data.type === 'answer') {
+          await peerConn.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } else if (data.type === 'candidate') {
+          if (peerConn) await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      } else if (msg.type === 'peer_disconnected') {
+        if (transferState === 'transferring') {
+          transferState = 'paused';
+          updateProgressModal('Peer Disconnected', 'Transfer paused. Reconnect to resume.', 0);
+          modalPauseBtn.textContent = 'Resume';
+        }
+      }
+    }
+
+    // --- DATA CHANNEL & CHUNKED P2P TRANSFER ---
+    function setupDataChannel(channel) {
+      channel.binaryType = 'arraybuffer';
+      channel.bufferedAmountLowThreshold = 512 * 1024; // Backpressure threshold
+
+      channel.onopen = () => {
+        console.log("Data channel opened");
+        if (isSender) {
+          // Send Manifest
+          manifest = selectedFiles.map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type,
+            lastModified: f.lastModified,
+            fileId: `${f.name}_${f.size}_${f.lastModified}`
+          }));
+          channel.send(JSON.stringify({ type: 'MANIFEST', files: manifest }));
+          updateProgressModal('Connected to Peer', 'Waiting for receiver request...', 0);
+        }
+      };
+
+      channel.onmessage = async (e) => {
+        if (typeof e.data === 'string') {
+          const controlMsg = JSON.parse(e.data);
+          handleControlMessage(controlMsg);
+        } else {
+          // Binary Data Chunk received
+          if (!isSender) {
+            await handleIncomingChunk(e.data);
+          }
+        }
+      };
+
+      channel.onclose = () => {
+        console.log("Data channel closed");
+      };
+    }
+
+    // --- SENDER TRANSMISSION ENGINE ---
+    async function handleControlMessage(msg) {
+      if (isSender) {
+        if (msg.type === 'START_TRANSFER') {
+          currentFileIndex = msg.fileIndex || 0;
+          currentChunkIndex = msg.startChunkIndex || 0;
+          transferState = 'transferring';
+          startTime = Date.now();
+          totalBytesAllFiles = selectedFiles.reduce((acc, f) => acc + f.size, 0);
+          
+          modalPauseBtn.style.display = 'block';
+          modalPauseBtn.textContent = 'Pause';
+
+          startSendingFileStream();
+        } else if (msg.type === 'PAUSE_TRANSFER') {
+          transferState = 'paused';
+          updateProgressModal('Transfer Paused', 'Paused by receiver.', 0);
+          modalPauseBtn.textContent = 'Resume';
+        } else if (msg.type === 'RESUME_TRANSFER') {
+          transferState = 'transferring';
+          modalPauseBtn.textContent = 'Pause';
+          startSendingFileStream();
+        }
+      } else {
+        // RECEIVER CONTROL MESSAGES
+        if (msg.type === 'MANIFEST') {
+          manifest = msg.files;
+          totalBytesAllFiles = manifest.reduce((acc, f) => acc + f.size, 0);
+          currentFileIndex = 0;
+          currentChunkIndex = 0;
+
+          // Check IndexedDB for resume state
+          const firstFile = manifest[0];
+          const existingMeta = await storage.getTransferMeta(firstFile.fileId);
+
+          if (existingMeta && existingMeta.receivedChunksCount > 0 && !existingMeta.completed) {
+            currentChunkIndex = existingMeta.receivedChunksCount;
+            transferredBytesAllFiles = currentChunkIndex * CHUNK_SIZE;
+            updateProgressModal('Resuming Transfer', `Found partial download. Resuming from ${formatBytes(transferredBytesAllFiles)}...`, 0);
+          } else {
+            transferredBytesAllFiles = 0;
+          }
+
+          transferState = 'transferring';
+          startTime = Date.now();
+          modalPauseBtn.style.display = 'block';
+          modalPauseBtn.textContent = 'Pause';
+
+          // Try FileSystemAccess API if available for zero RAM streaming
+          const currentFile = manifest[currentFileIndex];
+          if ('showSaveFilePicker' in window && !writableStream) {
+            try {
+              const handle = await window.showSaveFilePicker({ suggestedName: currentFile.name });
+              writableStream = await handle.createWritable({ keepExistingData: true });
+              if (currentChunkIndex > 0) {
+                await writableStream.seek(currentChunkIndex * CHUNK_SIZE);
+              }
+            } catch (err) {
+              console.log("File picker cancelled or unavailable, using IndexedDB fallback.");
+              writableStream = null;
+            }
+          }
+
+          // Request sender to start/resume
+          dataChannel.send(JSON.stringify({
+            type: 'START_TRANSFER',
+            fileIndex: currentFileIndex,
+            startChunkIndex: currentChunkIndex
+          }));
+        } else if (msg.type === 'TRANSFER_COMPLETE') {
+          updateProgressModal('Transfer Complete!', 'All files downloaded successfully.', 100);
+          transferState = 'idle';
+          modalPauseBtn.style.display = 'none';
+          setTimeout(finishTransfer, 3000);
+        }
+      }
+    }
+
+    async function startSendingFileStream() {
+      while (currentFileIndex < selectedFiles.length && transferState === 'transferring') {
+        const file = selectedFiles[currentFileIndex];
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+        while (currentChunkIndex < totalChunks && transferState === 'transferring') {
+          // Flow Control Check (Backpressure)
+          if (dataChannel.bufferedAmount > 1024 * 1024) {
+            await waitForBufferedAmountLow();
+          }
+
+          const start = currentChunkIndex * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunkBlob = file.slice(start, end);
+          const arrayBuffer = await chunkBlob.arrayBuffer();
+
+          // Send chunk header and binary payload
+          dataChannel.send(JSON.stringify({
+            type: 'CHUNK_HEADER',
+            fileIndex: currentFileIndex,
+            chunkIndex: currentChunkIndex,
+            totalChunks: totalChunks,
+            bytes: arrayBuffer.byteLength
+          }));
+
+          dataChannel.send(arrayBuffer);
+
+          currentChunkIndex++;
+          transferredBytesAllFiles += arrayBuffer.byteLength;
+
+          // UI Progress Calculation
+          const progress = Math.round((transferredBytesAllFiles / totalBytesAllFiles) * 100);
+          const elapsedTime = (Date.now() - startTime) / 1000;
+          const speed = elapsedTime > 0 ? (transferredBytesAllFiles / elapsedTime) : 0;
+
+          updateProgressModal(
+            'Sending files...',
+            `Sending file ${currentFileIndex + 1} of ${selectedFiles.length}: ${file.name}`,
+            progress,
+            `${formatBytes(speed)}/s`,
+            `${formatBytes(transferredBytesAllFiles)} / ${formatBytes(totalBytesAllFiles)}`
+          );
+        }
+
+        if (currentChunkIndex >= totalChunks) {
+          currentFileIndex++;
+          currentChunkIndex = 0;
+        }
+      }
+
+      if (currentFileIndex >= selectedFiles.length && transferState === 'transferring') {
+        dataChannel.send(JSON.stringify({ type: 'TRANSFER_COMPLETE' }));
+        updateProgressModal('Transfer Complete!', 'All files sent successfully.', 100);
+        transferState = 'idle';
+        modalPauseBtn.style.display = 'none';
+        setTimeout(finishTransfer, 3000);
+      }
+    }
+
+    function waitForBufferedAmountLow() {
+      return new Promise((resolve) => {
+        if (!dataChannel || dataChannel.bufferedAmount <= 512 * 1024) return resolve();
+        dataChannel.onbufferedamountlow = () => {
+          dataChannel.onbufferedamountlow = null;
+          resolve();
+        };
+        setTimeout(resolve, 50);
+      });
+    }
+
+    // --- RECEIVER INCOMING CHUNK ENGINE ---
+    let pendingChunkHeader = null;
+
+    async function handleIncomingChunk(data) {
+      const fileInfo = manifest[currentFileIndex];
+      if (!fileInfo) return;
+
+      if (writableStream) {
+        // Direct to Disk Streaming
+        await writableStream.write(data);
+      } else {
+        // IndexedDB Persistence Fallback
+        currentFileBuffer.push(data);
+        await storage.saveChunk(fileInfo.fileId, currentChunkIndex, data);
+      }
+
+      currentChunkIndex++;
+      transferredBytesAllFiles += data.byteLength;
+
+      const totalChunks = Math.ceil(fileInfo.size / CHUNK_SIZE);
+      
+      // Update IndexedDB Transfer Metadata for Resume tracking
+      await storage.saveTransferMeta({
+        fileId: fileInfo.fileId,
+        fileName: fileInfo.name,
+        fileSize: fileInfo.size,
+        totalChunks: totalChunks,
+        receivedChunksCount: currentChunkIndex,
+        completed: currentChunkIndex >= totalChunks
+      });
+
+      const progress = Math.round((transferredBytesAllFiles / totalBytesAllFiles) * 100);
+      const elapsedTime = (Date.now() - startTime) / 1000;
+      const speed = elapsedTime > 0 ? (transferredBytesAllFiles / elapsedTime) : 0;
+
+      updateProgressModal(
+        'Receiving files...',
+        `Receiving: ${fileInfo.name}`,
+        progress,
+        `${formatBytes(speed)}/s`,
+        `${formatBytes(transferredBytesAllFiles)} / ${formatBytes(totalBytesAllFiles)}`
+      );
+
+      // Check if current file complete
+      if (currentChunkIndex >= totalChunks) {
+        if (writableStream) {
+          await writableStream.close();
+          writableStream = null;
+        } else {
+          // Trigger file assembly & download from IndexedDB chunks
+          const chunks = await storage.getChunks(fileInfo.fileId);
+          chunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
+          const blob = new Blob(chunks.map(c => c.data), { type: fileInfo.type || 'application/octet-stream' });
+          downloadFileBlob(blob, fileInfo.name);
+          await storage.clearFile(fileInfo.fileId);
+          currentFileBuffer = [];
+        }
+
+        currentFileIndex++;
+        currentChunkIndex = 0;
+      }
+    }
+
+    function downloadFileBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Modal Pause & Cancel handlers
+    modalPauseBtn.addEventListener('click', () => {
+      if (transferState === 'transferring') {
+        transferState = 'paused';
+        modalPauseBtn.textContent = 'Resume';
+        updateProgressModal('Transfer Paused', 'Click Resume to continue.', 0);
+        if (dataChannel && dataChannel.readyState === 'open') {
+          dataChannel.send(JSON.stringify({ type: 'PAUSE_TRANSFER' }));
+        }
+      } else if (transferState === 'paused') {
+        transferState = 'transferring';
+        modalPauseBtn.textContent = 'Pause';
+        if (dataChannel && dataChannel.readyState === 'open') {
+          dataChannel.send(JSON.stringify({ type: 'RESUME_TRANSFER' }));
+        }
+        if (isSender) startSendingFileStream();
+      }
+    });
+
+    modalCancelBtn.addEventListener('click', () => {
+      finishTransfer();
+    });
+
+    function finishTransfer() {
+      transferState = 'idle';
+      if (writableStream) {
+        writableStream.close().catch(() => {});
+        writableStream = null;
+      }
+      if (dataChannel) {
+        dataChannel.close();
+        dataChannel = null;
+      }
+      if (peerConn) {
+        peerConn.close();
+        peerConn = null;
+      }
+      closeProgressModal();
+      renderFileList();
+      modalPauseBtn.style.display = 'none';
+    }
+
+    function openProgressModal(title, subtitle) {
+      modalTitle.querySelector('span').textContent = title;
+      modalSubtitle.textContent = subtitle;
+      modalPercentage.textContent = '0%';
+      progressBarFill.style.width = '0%';
+      transferSpeed.textContent = '0 KB/s';
+      transferMeta.textContent = '0 B / 0 B';
+      progressModal.classList.add('active');
+    }
+
+    function updateProgressModal(title, subtitle, percent, speedText = '', metaText = '') {
+      modalTitle.querySelector('span').textContent = title;
+      if (subtitle) modalSubtitle.textContent = subtitle;
+      modalPercentage.textContent = `${percent}%`;
+      progressBarFill.style.width = `${percent}%`;
+      if (speedText) transferSpeed.textContent = speedText;
+      if (metaText) transferMeta.textContent = metaText;
+    }
+
+    function closeProgressModal() {
+      progressModal.classList.remove('active');
+    }
+  </script>
+</body>
+</html>
